@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: MyThemeShop Connect\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-09-26 23:13+0530\n"
-"PO-Revision-Date: 2015-09-26 23:13+0530\n"
+"POT-Creation-Date: 2017-02-07 11:49+0100\n"
+"PO-Revision-Date: 2017-02-07 11:49+0100\n"
 "Last-Translator: MyThemeShop <support-team@mythemeshop.com>\n"
 "Language-Team: MyThemeShop <support-team@mythemeshop.com>\n"
 "Language: en_US\n"
@@ -12,7 +12,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Poedit-KeywordsList: __;_e\n"
 "X-Poedit-Basepath: .\n"
-"X-Generator: Poedit 1.6.2\n"
+"X-Generator: Poedit 1.8.11\n"
 "X-Poedit-SearchPath-0: ..\n"
 
 #: ../mythemeshop-connect.php:228
@@ -45,44 +45,44 @@ msgstr ""
 msgid "Notices reset."
 msgstr ""
 
-#: ../mythemeshop-connect.php:485
+#: ../mythemeshop-connect.php:507
 msgid "MyThemeShop Connect"
 msgstr ""
 
-#: ../mythemeshop-connect.php:489
+#: ../mythemeshop-connect.php:511
 msgid "Connected!"
 msgstr ""
 
-#: ../mythemeshop-connect.php:490
+#: ../mythemeshop-connect.php:512
 msgid "MyThemeShop username:"
 msgstr ""
 
-#: ../mythemeshop-connect.php:491
+#: ../mythemeshop-connect.php:513
 msgid "Disconnect"
 msgstr ""
 
-#: ../mythemeshop-connect.php:497
+#: ../mythemeshop-connect.php:519
 msgid ""
-"Enter your MyThemeShop Username and Password to get free Theme/Plugin "
+"Enter your MyThemeShop Email/Username and Password to get free Theme/Plugin "
 "updates."
 msgstr ""
 
-#: ../mythemeshop-connect.php:498
-msgid "Username"
+#: ../mythemeshop-connect.php:520
+msgid "Email address or Username"
 msgstr ""
 
-#: ../mythemeshop-connect.php:500
+#: ../mythemeshop-connect.php:522
 msgid "Password"
 msgstr ""
 
-#: ../mythemeshop-connect.php:503
+#: ../mythemeshop-connect.php:525
 msgid "Connect"
 msgstr ""
 
-#: ../mythemeshop-connect.php:791
+#: ../mythemeshop-connect.php:818
 msgid "Dissmiss Notice"
 msgstr ""
 
-#: ../mythemeshop-connect.php:792
+#: ../mythemeshop-connect.php:819
 msgid "Dissmiss All Notices"
 msgstr ""

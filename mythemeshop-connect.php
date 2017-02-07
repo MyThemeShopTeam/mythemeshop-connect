@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Theme/Plugin Updater
  * Plugin URI: http://www.mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 1.3
+ * Version: 1.3.1
  * Author: MyThemeShop
  * Author URI: http://www.mythemeshop.com
  * License: GPLv2
@@ -516,8 +516,8 @@ class mts_connection {
             // connect form
             $form = '<form action="'.admin_url('admin-ajax.php').'" method="post" id="mts_connect_form">';
             $form .= '<input type="hidden" name="action" value="mts_connect" />';
-            $form .= '<p>'.__('Enter your MyThemeShop Username and Password to get free Theme/Plugin updates.', 'mythemeshop-connect').'</p>';
-            $form .= '<label>'.__('Username', 'mythemeshop-connect').'</label>';
+            $form .= '<p>'.__('Enter your MyThemeShop Email/Username and Password to get free Theme/Plugin updates.', 'mythemeshop-connect').'</p>';
+            $form .= '<label>'.__('Email address or Username', 'mythemeshop-connect').'</label>';
             $form .= '<input type="text" val="" name="username" id="mts_username" />';
             $form .= '<label>'.__('Password', 'mythemeshop-connect').'</label>';
             $form .= '<input type="password" val="" name="password" id="mts_password" />';

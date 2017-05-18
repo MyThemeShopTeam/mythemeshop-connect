@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Theme/Plugin Updater
  * Plugin URI: http://www.mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 1.3.1
+ * Version: 1.3.2
  * Author: MyThemeShop
  * Author URI: http://www.mythemeshop.com
  * License: GPLv2
@@ -863,15 +863,18 @@ class mts_connection {
     }
 
     public function fix_false_wp_org_theme_update_notification( $val ) {
-
+        $allow_update = array( 'point', 'ribbon-lite' );
         if ( property_exists( $val, 'response' ) && is_array( $val->response ) ) {
             foreach ( $val->response as $key => $value ) {
                 if ( isset( $value['theme'] ) ) {// added by WordPress
+                    if ( in_array( $value['theme'], $allow_update ) ) {
+                        continue;
+                    }
                     $url = $value['url'];// maybe wrong url for MyThemeShop theme
                     $theme = wp_get_theme( $value['theme'] );//real theme object
                     $theme_uri = $theme->get( 'ThemeURI' );//theme url
                     // If it is MyThemeShop theme but wordpress.org have the theme with same name, remove it from update response
-                    if ( 0 !== strpos( $theme_uri, 'mythemeshop.com' ) && 0 !== strpos( $url, 'wordpress.org' ) ) {
+                    if ( false !== strpos( $theme_uri, 'mythemeshop.com' ) && false !== strpos( $url, 'wordpress.org' ) ) {
                         unset( $val->response[$key] );
                     }
                 }

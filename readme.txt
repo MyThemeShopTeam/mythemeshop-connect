@@ -4,7 +4,7 @@ Creator's website link: http://mythemeshop.com/
 Tags: mythemeshop connect, mythemeshop, mythemeshop update, theme update
 Requires at least: 3.0.1
 Tested up to: 4.4
-Stable tag: 1.2.9
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -71,7 +71,16 @@ You can dismiss the update notification using close button present in notificati
 
 == Changelog ==
 
-= 1.2.8 (Feb 2, 2016) =
+= 1.3.2 (May 18, 2017) =
+* Fixed wordpress.org theme update issue
+
+= 1.3.1 (Feb 7, 2017) =
+* Updated text and input label so that possibility to login using email is obvious 
+
+= 1.3 (Mar 14, 2016) =
+* Added possibility to login using email instead of username
+
+= 1.2.9 (Feb 2, 2016) =
 * Fixed changelog inside notice not loading
 
 = 1.2.8 (Jan 5, 2016) =

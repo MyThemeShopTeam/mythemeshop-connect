@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Theme/Plugin Updater
  * Plugin URI: http://www.mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 1.3.2
+ * Version: 1.3.3
  * Author: MyThemeShop
  * Author URI: http://www.mythemeshop.com
  * License: GPLv2
@@ -48,8 +48,9 @@ class mts_connection {
         add_action( 'admin_init', array(&$this, 'admin_init'));
         //add_action( 'admin_print_scripts', array(&$this, 'admin_inline_js'));        
         
-        add_action( 'load-themes.php', array( &$this, 'force_check' ));
-        add_action( 'load-plugins.php', array( &$this, 'force_check' ));
+        add_action( 'load-themes.php', array( &$this, 'force_check' ), 9);
+        add_action( 'load-plugins.php', array( &$this, 'force_check' ), 9);
+        add_action( 'load-update-core.php', array( &$this, 'force_check' ), 9);
         
         // show notices
         if (is_multisite())
@@ -320,6 +321,10 @@ class mts_connection {
         }
 
         $mts_updates = get_site_transient('mts_update_themes');
+        if ( ! $this->needs_check_now( $mts_updates ) ) {
+            return $update_transient;
+        }
+
         if (empty($_GET['disconnect'])) {
             $send_to_api = array(
                 'installed_themes' => $themes,
@@ -393,6 +398,10 @@ class mts_connection {
             $plugins = $update_transient->checked;
         
         $mts_updates = get_site_transient('mts_update_plugins');
+        if ( ! $this->needs_check_now( $mts_updates ) ) {
+            return $update_transient;
+        }
+
         if (empty($_GET['disconnect'])) {
             $send_to_api = array(
                 'installed_plugins' => $plugins,
@@ -465,6 +474,19 @@ class mts_connection {
             set_site_transient( 'mts_update_plugins', $last_update );
         }
         return $update_transient;
+    }
+
+    /**
+    * We need to check for updates if:
+    * - user is on the "Updates" page
+    * - last check was more than a day ago
+    * 
+    */
+    function needs_check_now( $updates_data ) {
+        if ( is_object( $updates_data ) && isset( $updates_data->last_checked ) && $updates_data->last_checked < ( time() + (60 * 60 * 24) ) ) {
+            return false;
+        }
+        return true;
     }
     
     function ui_onload() {

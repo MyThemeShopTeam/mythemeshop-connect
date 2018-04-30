@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Theme/Plugin Updater
  * Plugin URI: http://www.mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 1.3.3
+ * Version: 1.4
  * Author: MyThemeShop
  * Author URI: http://www.mythemeshop.com
  * License: GPLv2
@@ -13,7 +13,7 @@ defined('ABSPATH') or die;
 
 class mts_connection {
     
-    private $api_url = "https://www.mythemeshop.com/api/v5/";
+    private $api_url = "https://deving.mythemeshop.com/mtsapi/v1/";
     
     private $settings_option = "mts_connect_settings";
     private $data_option = "mts_connect_data";
@@ -24,7 +24,7 @@ class mts_connection {
     protected $notices = array();
     protected $sticky_notices = array();
     protected $settings = array();
-    protected $default_settings = array('network_notices' => '1');
+    protected $default_settings = array('network_notices' => '1', 'update_notices' => '1', 'ui_access_type' => 'role', 'ui_access_role' => 'administrator', 'ui_access_user' => '');
     protected $notice_defaults = array();
     protected $notice_tags = array();
     
@@ -45,40 +45,41 @@ class mts_connection {
             'context' => array()
         );
         
-        add_action( 'admin_init', array(&$this, 'admin_init'));
-        //add_action( 'admin_print_scripts', array(&$this, 'admin_inline_js'));        
+        add_action( 'admin_init', array($this, 'admin_init'));
+        //add_action( 'admin_print_scripts', array($this, 'admin_inline_js'));        
         
-        add_action( 'load-themes.php', array( &$this, 'force_check' ), 9);
-        add_action( 'load-plugins.php', array( &$this, 'force_check' ), 9);
-        add_action( 'load-update-core.php', array( &$this, 'force_check' ), 9);
+        add_action( 'load-themes.php', array( $this, 'force_check' ), 9);
+        add_action( 'load-plugins.php', array( $this, 'force_check' ), 9);
+        add_action( 'load-update-core.php', array( $this, 'force_check' ), 9);
         
         // show notices
         if (is_multisite())
-            add_action( 'network_admin_notices', array(&$this, 'show_notices'));
+            add_action( 'network_admin_notices', array($this, 'show_notices'));
         else
-            add_action( 'admin_notices', array(&$this, 'show_notices'));
+            add_action( 'admin_notices', array($this, 'show_notices'));
         
         // user has dismissed a notice?
-        add_action( 'admin_init', array(&$this, 'dismiss_notices'));
+        add_action( 'admin_init', array($this, 'dismiss_notices'));
         // add menu item
         if (is_multisite())
-            add_action( 'network_admin_menu', array(&$this, 'admin_menu'));
+            add_action( 'network_admin_menu', array($this, 'admin_menu'));
         else
-            add_action( 'admin_menu', array(&$this, 'admin_menu'));
+            add_action( 'admin_menu', array($this, 'admin_menu'));
         // remove old notifications
         add_action( 'after_setup_theme', array($this, 'after_theme') );
         
-        add_action('wp_ajax_mts_connect',array(&$this,'ajax_mts_connect'));
-        add_action('wp_ajax_mts_connect_dismiss_notice',array(&$this,'ajax_mts_connect_dismiss_notices'));
-        add_action('wp_ajax_mts_connect_check_themes',array(&$this,'ajax_mts_connect_check_themes'));
-        add_action('wp_ajax_mts_connect_check_plugins',array(&$this,'ajax_mts_connect_check_plugins'));
+        add_action('wp_ajax_mts_connect',array($this,'ajax_mts_connect'));
+        add_action('wp_ajax_mts_connect_update_settings',array($this,'ajax_update_settings'));
+        add_action('wp_ajax_mts_connect_dismiss_notice',array($this,'ajax_mts_connect_dismiss_notices'));
+        add_action('wp_ajax_mts_connect_check_themes',array($this,'ajax_mts_connect_check_themes'));
+        add_action('wp_ajax_mts_connect_check_plugins',array($this,'ajax_mts_connect_check_plugins'));
         
-        add_filter( 'pre_set_site_transient_update_themes',  array( &$this,'check_theme_updates' ));
-        add_filter( 'pre_set_site_transient_update_plugins',  array( &$this,'check_plugin_updates' ));
+        add_filter( 'pre_set_site_transient_update_themes',  array( $this,'check_theme_updates' ));
+        add_filter( 'pre_set_site_transient_update_plugins',  array( $this,'check_plugin_updates' ));
 
         // Fix false wordpress.org update notifications
-        add_filter( 'pre_set_site_transient_update_themes', array(&$this,'fix_false_wp_org_theme_update_notification') );
-        //add_filter( 'pre_set_site_transient_update_plugins', array(&$this,'fix_false_wp_org_plugin_update_notification') );
+        add_filter( 'pre_set_site_transient_update_themes', array($this,'fix_false_wp_org_theme_update_notification') );
+        //add_filter( 'pre_set_site_transient_update_plugins', array($this,'fix_false_wp_org_plugin_update_notification') );
         
         register_activation_hook( __FILE__, array($this, 'plugin_activated' ));
         register_deactivation_hook( __FILE__, array($this, 'plugin_deactivated' ));
@@ -140,8 +141,8 @@ class mts_connection {
         $password = isset($_POST['password']) ? $_POST['password'] : '';
         
         $response = wp_remote_post( 
-            $this->api_url . '?action=connect', 
-            array( 'body' => array( 'username' => $username, 'password' => $password ), 'timeout' => 10 ) 
+            $this->api_url . 'get_key', 
+            array( 'body' => array( 'user' => $username, 'pass' => $password ), 'timeout' => 10 ) 
         );
         
         if ( is_wp_error( $response ) ) {
@@ -151,10 +152,10 @@ class mts_connection {
             echo $response['body']; // should be JSON already
            
             $data = json_decode($response['body'], true);
-            if (isset($data['status']) && $data['status'] == 'success') {
+            if ( isset( $data['login'] ) ) {
                 $this->reset_notices();
-                $this->connect_data['username'] = $data['username'];
-                $this->connect_data['api_key'] = $data['api_key'];
+                $this->connect_data['username'] = $data['login'];
+                $this->connect_data['api_key'] = $data['key'];
                 $this->connect_data['connected'] = true;
                 $this->update_data();
             }
@@ -212,14 +213,15 @@ class mts_connection {
     
     function admin_menu() {
         // Add the new admin menu and page and save the returned hook suffix
-        $this->menu_hook_suffix = add_menu_page('MyThemeShop Connect', 'MyThemeShop', 'manage_options', 'mts-connect', array( &$this, 'show_ui' ), 'dashicons-update', 66 );
+        $this->menu_hook_suffix = add_menu_page('MyThemeShop Connect', 'MyThemeShop', 'manage_options', 'mts-connect', array( $this, 'show_ui' ), 'dashicons-update', 66 );
         // Use the hook suffix to compose the hook and register an action executed when plugin's options page is loaded
-        add_action( 'load-' . $this->menu_hook_suffix , array( &$this, 'ui_onload' ) );
+        add_action( 'load-' . $this->menu_hook_suffix , array( $this, 'ui_onload' ) );
     }
     function admin_init() {
         wp_register_script( 'mts-connect', plugins_url('/js/admin.js', __FILE__), array('jquery') );
         wp_register_script( 'mts-connect-form', plugins_url('/js/connect.js', __FILE__), array('jquery') );
         wp_register_style( 'mts-connect', plugins_url('/css/admin.css', __FILE__) );
+        wp_register_style( 'mts-connect-form', plugins_url('/css/form.css', __FILE__) );
         
         wp_localize_script('mts-connect', 'mtsconnect', array(
             'pluginurl' => network_admin_url('admin.php?page=mts-connect'),
@@ -232,15 +234,17 @@ class mts_connection {
             'l10n_check_themes_button' => __('Check for updates now', 'mythemeshop-connect'),
             'l10n_check_plugins_button' => __('Check for updates now', 'mythemeshop-connect'),
             'l10n_insert_username' => __('Please insert your MyThemeShop <strong>username</strong> instead of the email address you registered with.', 'mythemeshop-connect'),
+            'l10n_accept_tos' => __('You have to accept the terms.', 'mythemeshop-connect'),
         ) );
         
+        // Enqueue on all admin pages because notice may appear anywhere
         wp_enqueue_script( 'mts-connect' );
         wp_enqueue_style( 'mts-connect' );
         
         $current_user = wp_get_current_user();
         // Tags to use in notifications
         $this->notice_tags = array(
-            '[logo_url]' => plugins_url( 'images/wordpress.png' , __FILE__ ),
+            '[logo_url]' => plugins_url( 'img/mythemeshop-logo.png' , __FILE__ ),
             '[plugin_url]' => network_admin_url('admin.php?page=mts-connect'),
             '[themes_url]' => network_admin_url('themes.php'),
             '[plugins_url]' => network_admin_url('plugins.php'),
@@ -326,33 +330,37 @@ class mts_connection {
         }
 
         if (empty($_GET['disconnect'])) {
+            $r = 'check_themes';
             $send_to_api = array(
-                'installed_themes' => $themes,
-                'folders_fix'      => $folders_fix,
-                'php_version'      => phpversion(),
-                'siteurl'          => home_url(),
-                'wp_version'       => $wp_version,  
-                'plugin_version'   => $this->plugin_get_version(),
-                'connected'        => 0
+                'themes' => $themes,
+                'prefixed'      => $folders_fix,
+                'info'          => array( 
+                    'url' => home_url(), 
+                    'php_version' => phpversion(), 
+                    'wp_version' => $wp_version,
+                    'plugin_version' => $this->plugin_get_version() 
+                )
             );
+
             // is connected
-            if ($this->connected()) {
-                $send_to_api['connected'] = 1;
-                $send_to_api['username'] = $this->connect_data['username'];
-                $send_to_api['api_key'] = $this->connect_data['api_key'];
+            if ( $this->is_connected() ) {
+                $send_to_api['user'] = $this->connect_data['username'];
+                $send_to_api['key'] = $this->connect_data['api_key'];
+            } else {
+                $r = 'guest/'.$r;
             }
     
             $options = array(
                 'timeout' => ( ( defined('DOING_CRON') && DOING_CRON ) ? 30 : 10),
-                'body'          => $send_to_api,
-                'user-agent'    => 'WordPress/' . $wp_version . '; ' . home_url()
+                'body'          => $send_to_api
             );
     
             $last_update = new stdClass();
+            $no_access = new stdClass();
     
-            $theme_request = wp_remote_post( $this->api_url.'?action=check_themes', $options );
+            $theme_request = wp_remote_post( $this->api_url.$r, $options );
             
-            if ( ! is_wp_error( $theme_request ) && wp_remote_retrieve_response_code( $theme_request ) == 200 ){
+            if ( ! is_wp_error( $theme_request ) && wp_remote_retrieve_response_code( $theme_request ) == 200 ) {
                 $theme_response = json_decode( wp_remote_retrieve_body( $theme_request ), true );
     
                 if ( ! empty( $theme_response ) ) {
@@ -362,10 +370,16 @@ class mts_connection {
                     }
                     $last_update->checked = $themes;
                     
-                    if (!empty($theme_response['themes'])) {
+                    if ( ! empty( $theme_response['themes'] ) ) {
                         $last_update->response = $theme_response['themes'];
                     } else {
                         $last_update->response = array();
+                    }
+
+                    if ( ! empty( $theme_response['themes_no_access'] ) ) {
+                        $no_access->response = $theme_response['themes_no_access'];
+                    } else {
+                        $no_access->response = array();
                     }
                     
                     if (!empty($theme_response['notices'])) {
@@ -384,6 +398,7 @@ class mts_connection {
             
             $last_update->last_checked = time();
             set_site_transient( 'mts_update_themes', $last_update );
+            set_site_transient( 'mts_update_themes_no_access', $no_access );
         }
 
         return $update_transient;
@@ -403,30 +418,33 @@ class mts_connection {
         }
 
         if (empty($_GET['disconnect'])) {
+            $r = 'check_plugins';
             $send_to_api = array(
-                'installed_plugins' => $plugins,
-                'php_version'      => phpversion(),
-                'siteurl'          => home_url(),
-                'wp_version'       => $wp_version,  
-                'plugin_version'   => $this->plugin_get_version(),
-                'connected'        => 0
+                'plugins' => $plugins,
+                'info'          => array( 
+                    'url' => home_url(), 
+                    'php_version' => phpversion(), 
+                    'wp_version' => $wp_version,
+                    'plugin_version' => $this->plugin_get_version() 
+                )
             );
             // is connected
-            if ($this->connected()) {
-                $send_to_api['connected'] = 1;
+            if ($this->is_connected()) {
                 $send_to_api['username'] = $this->connect_data['username'];
                 $send_to_api['api_key'] = $this->connect_data['api_key'];
+            } else {
+                $r = 'guest/'.$r;
             }
     
             $options = array(
                 'timeout' => ( ( defined('DOING_CRON') && DOING_CRON ) ? 30 : 10),
-                'body'          => $send_to_api,
-                'user-agent'    => 'WordPress/' . $wp_version . '; ' . home_url()
+                'body'          => $send_to_api
             );
     
             $last_update = new stdClass();
+            $no_access = new stdClass();
     
-            $plugin_request = wp_remote_post( $this->api_url.'?action=check_plugins', $options );
+            $plugin_request = wp_remote_post( $this->api_url.$r, $options );
             
             if ( ! is_wp_error( $plugin_request ) && wp_remote_retrieve_response_code( $plugin_request ) == 200 ){
                 $plugin_response = json_decode( wp_remote_retrieve_body( $plugin_request ), true );
@@ -448,12 +466,19 @@ class mts_connection {
 
                         $update_transient->response = array_merge( (array) $update_transient->response, (array) $plugin_response['plugins'] );
                     }
+
                     $last_update->checked = $plugins;
                     
                     if (!empty($plugin_response['plugins'])) {
                         $last_update->response = $plugin_response['plugins'];
                     } else {
                         $last_update->response = array();
+                    }
+
+                    if ( ! empty( $plugin_response['plugins_no_access'] ) ) {
+                        $no_access->response = $plugin_response['plugins_no_access'];
+                    } else {
+                        $no_access->response = array();
                     }
                     
                     if (!empty($plugin_response['notices'])) {
@@ -472,21 +497,13 @@ class mts_connection {
 
             $last_update->last_checked = time();
             set_site_transient( 'mts_update_plugins', $last_update );
+            set_site_transient( 'mts_update_plugins_no_access', $no_access );
         }
         return $update_transient;
     }
 
-    /**
-    * We need to check for updates if:
-    * - user is on the "Updates" page
-    * - last check was more than a day ago
-    * 
-    */
     function needs_check_now( $updates_data ) {
-        if ( is_object( $updates_data ) && isset( $updates_data->last_checked ) && $updates_data->last_checked < ( time() + (60 * 60 * 24) ) ) {
-            return false;
-        }
-        return true;
+        return apply_filters( 'mts_connect_needs_check', true, $updates_data );
     }
     
     function ui_onload() {
@@ -525,10 +542,20 @@ class mts_connection {
     
     public function show_ui() {
         wp_enqueue_script('mts-connect-form');
+        wp_enqueue_style('mts-connect-form');
+        /* 
         echo '<div class="mts_connect_ui">';
-        echo '<h2>'.__('MyThemeShop Connect', 'mythemeshop-connect').'</h2>';
+        // echo '<h2>'.__('MyThemeShop Connect', 'mythemeshop-connect').'</h2>';
         echo '<div class="mts_connect_ui_content">';
-        if ( $this->connected() ) {
+        echo '<nav class="nav-tab-wrapper mtsc-nav-tab-wrapper">';
+        echo '<a href="#" class="nav-tab nav-tab-active" data-tabcontent="connect">'.__('Connect', 'mythemeshop-connect').'</a>';
+        echo '<a href="#" class="nav-tab" data-tabcontent="settings">'.__('Settings', 'mythemeshop-connect').'</a>';
+        echo '</nav>';
+        echo '<div id="mtsc-tabs">';
+
+        echo '<div id="mtsc-tab-connect">';
+
+        if ( $this->is_connected() ) {
             
             echo '<p>'.__('Connected!', 'mythemeshop-connect').'</br>';
             echo __('MyThemeShop username:', 'mythemeshop-connect').' <strong>'.$this->connect_data['username'].'</strong></p>';
@@ -538,8 +565,8 @@ class mts_connection {
             // connect form
             $form = '<form action="'.admin_url('admin-ajax.php').'" method="post" id="mts_connect_form">';
             $form .= '<input type="hidden" name="action" value="mts_connect" />';
-            $form .= '<p>'.__('Enter your MyThemeShop Email/Username and Password to get free Theme/Plugin updates.', 'mythemeshop-connect').'</p>';
-            $form .= '<label>'.__('Email address or Username', 'mythemeshop-connect').'</label>';
+            $form .= '<p class="description">'.__('Enter your MyThemeShop username or the email address you registered with and your password to get instant updates for all your MyThemeShop products.', 'mythemeshop-connect').'</p>';
+            $form .= '<label>'.__('MyThemeShop Username', 'mythemeshop-connect').'</label>';
             $form .= '<input type="text" val="" name="username" id="mts_username" />';
             $form .= '<label>'.__('Password', 'mythemeshop-connect').'</label>';
             $form .= '<input type="password" val="" name="password" id="mts_password" />';
@@ -552,18 +579,188 @@ class mts_connection {
             
         }
 
-        echo '</div>'; 
-        echo '</div>';
+        echo '</div>'; // #mtsc-tab-connect
+        
+        echo '<div id="mtsc-tab-settings">';
+            // settings form
+            $form = '<form action="'.admin_url('admin-ajax.php').'" method="post" id="mts_connect_form">';
+            $form .= '<input type="hidden" name="action" value="mts_connect" />';
+            $form .= '<p>'.__('Enter your MyThemeShop email/username and password to get instant updates for all your MyThemeShop products.', 'mythemeshop-connect').'</p>';
+            $form .= '<label>'.__('Email address or Username', 'mythemeshop-connect').'</label>';
+            $form .= '<input type="text" val="" name="username" id="mts_username" />';
+            $form .= '<label>'.__('Password', 'mythemeshop-connect').'</label>';
+            $form .= '<input type="password" val="" name="password" id="mts_password" />';
+            
+            $form .= '<input type="submit" class="button button-primary" value="'.__('Connect', 'mythemeshop-connect').'" />';
+            
+            $form .= '</form>';
+        echo '</div>'; // #mtsc-tab-settings
+        
+        echo '</div>'; // #mtsc-tabs
+        echo '</div>'; // .mts_connect_ui_content
+        echo '</div>'; // .mts_connect_ui
+        */
+
+        $updates_required = false;
+        $theme_updates_required = false;
+        $plugin_updates_required = false;
+
+        $themes_transient = get_site_transient( 'mts_update_themes' );
+        $plugins_transient = get_site_transient( 'mts_update_plugins' );
+
+        $themes_noaccess_transient = get_site_transient( 'mts_update_themes_no_access' );
+        $plugins_noaccess_transient = get_site_transient( 'mts_update_plugins_no_access' );
+        
+        $available_theme_updates = $this->new_updates_available( $themes_transient );
+        $available_plugins_updates = $this->new_updates_available( $plugins_transient );
+
+        $inaccessible_theme_updates = $this->new_updates_available( $themes_noaccess_transient );
+        $inaccessible_plugins_updates = $this->new_updates_available( $plugins_noaccess_transient );
+
+        if ( $available_theme_updates || $available_plugins_updates || $inaccessible_theme_updates || $inaccessible_plugins_updates ) {
+            $updates_required = true;
+            if ( $available_theme_updates || $inaccessible_theme_updates ) {
+                $theme_updates_required = true;
+            }
+            if ( $available_plugins_updates || $inaccessible_plugins_updates ) {
+                $plugin_updates_required = true;
+            }
+        }
+
+        // Check for updates which user cannot access -- either because their membership is expired or because they ran out of domains
+        // @@todo
+
+        ?>
+        <div class="mts_connect_ui_content">
+            <nav class="nav-tab-wrapper" id="mtsc-nav-tab-wrapper">
+                <a href="#mtsc-connect" class="nav-tab nav-tab-active">Connect</a>
+                <a href="#mtsc-settings" class="nav-tab">Settings</a>
+            </nav>
+            <div id="mtsc-tabs">
+                <div id="mtsc-connect">
+                    <?php if ( ! $this->is_connected() ) { ?>
+                        <form action="<?php echo admin_url('admin-ajax.php'); ?>" method="post" id="mts_connect_form">
+                            <input type="hidden" name="action" value="mts_connect">
+                            
+                            <!-- <p class="description"><?php _e('Enter your MyThemeShop email/username and password to get instant updates for all your MyThemeShop products.', 'mythemeshop-connect'); ?></p> -->
+                            <img src="<?php echo plugins_url( 'img/mythemeshop-logo.png' , __FILE__ ); ?>" id="mts_logo">
+                            
+                            <label for="mts_username"><?php _e('MyThemeShop Username', 'mythemeshop-connect'); ?></label>
+                            <input type="text" val="" name="username" id="mts_username">
+
+                            <label for="mts_password"><?php _e('Password', 'mythemeshop-connect'); ?></label>
+                            <input type="password" val="" name="password" id="mts_password">
+
+                            <label for="mts_agree" id="mtsc-label-agree">
+                                <input type="checkbox" name="tos_agree" id="mts_agree" value="1"> 
+                                <?php _e('I accept the <a href="#">Terms and Conditions</a>', 'mythemeshop-connect'); ?>
+                            </label>
+
+                            <input type="submit" class="button button-primary" value="<?php esc_attr_e('Connect', 'mythemeshop-connect'); ?>">
+                        </form>
+                    <?php } else { ?>
+                        <div id="mtsc-connected">
+                            <img src="<?php echo plugins_url( 'img/mythemeshop-logo.png' , __FILE__ ); ?>" id="mts_logo">
+                            
+                            <div class="mtsc-updates-status">
+                                <?php if ( $updates_required ) { ?>
+                                    <div class="mtsc-status-icon mtsc-icon-updates-required">
+                                        <span class="dashicons dashicons-no-alt"></span>
+                                    </div>
+                                    <div class="mtsc-status-text">
+                                        <?php if ( $theme_updates_required && $plugin_updates_required ) { ?>
+                                            <p><?php printf( __('Your themes and plugins are outdated. Please navigate to %s to install the updates.', 'mythemeshop-connect'), '<a href="'.network_admin_url( 'update-core.php' ).'">'.__( 'the Updates page', 'mythemeshop-connect' ).'</a>' ); ?></p>
+                                        <?php } elseif ( $theme_updates_required ) { ?>
+                                            <p><?php printf( __('One or more themes are outdated. Please navigate to %s to install the updates.', 'mythemeshop-connect'), '<a href="'.network_admin_url( 'update-core.php' ).'">'.__( 'the Updates page', 'mythemeshop-connect' ).'</a>' ); ?></p>
+                                        <?php } elseif ( $plugin_updates_required ) { ?>
+                                            <p><?php printf( __('One or more plugins are outdated. Please navigate to %s to install the updates.', 'mythemeshop-connect'), '<a href="'.network_admin_url( 'update-core.php' ).'">'.__( 'the Updates page', 'mythemeshop-connect' ).'</a>' ); ?></p>
+                                        <?php } ?>
+                                    </div>
+                                <?php } else { ?>
+                                    <div class="mtsc-status-icon mtsc-icon-no-updates-required">
+                                        <span class="dashicons dashicons-yes"></span>
+                                    </div>
+                                    <div class="mtsc-status-text">
+                                        <p><?php _e('Your themes and plugins are up to date.', 'mythemeshop-connect'); ?></p>
+                                    </div>
+                                <?php } ?>
+                            </div>
+
+                            <div class="mtsc-connected-msg">
+                                <span class="mtsc-connected-msg-connected">
+                                    <?php _e('Connected', 'mythemeshop-connect'); ?>
+                                </span>
+                                <span class="mtsc-connected-msg-username">
+                                    <?php printf( __( 'MyThemeShop username: %s', 'mythemeshop-connect' ), '<span class="mtsc-username">'.$this->connect_data['username'].'</span>' ); ?>
+                                </span>
+                                <a href="<?php echo esc_url(add_query_arg('disconnect', '1')); ?>" class="mtsc-connected-msg-disconnect">
+                                    <?php _e('Disconnect', 'mythemeshop-connect'); ?>
+                                </a>
+                            </div>
+                        </div>
+                    <?php } ?>
+                </div>
+                <div id="mtsc-settings" style="display: none;">
+                    <form action="<?php echo admin_url('admin-ajax.php'); ?>" method="post" id="mts_connect_settings_form">
+                        <input type="hidden" name="action" value="mts_connect_edit_settings">
+                        
+                        <span class="mtsc-option-heading mtsc-label-adminaccess"><?php _e('Admin page access &amp; notice visibility', 'mythemeshop-connect'); ?></span>
+                        <p class="description mtsc-description-uiaccess">
+                            <?php _e('Control who can see this page and the admin notices.', 'mythemeshop-connect'); ?> 
+                            <?php printf( __('Pay attention when using this option because you may end up losing access to this page. In case that happens, you can use the following filter hook to give yourself access again: %1$s. More information at %2$s', 'mythemeshop-connect'), '<code>mts_connect_admin_access</code>', '<a href="https://www.mythemeshop.com/" target("_blank">'.__('mythemeshop.com', 'mythemeshop-connect' ).'</a>' ); ?>
+                        </p>
+                        <div class="mtsc-option-uiaccess mtsc-option-uiaccess-role">
+                            <label><input type="radio" name="ui_access_type" value="role" <?php checked( $this->settings['ui_access_type'], 'role' ); ?>><?php _e('User role: ', 'mythemeshop-connect'); ?></label>
+                            <select name="ui_access_role" id="mtsc-ui-access-role"><?php wp_dropdown_roles( $this->settings['ui_access_role'] ); ?></select>
+                        </div>
+
+                        <div class="mtsc-option-uiaccess mtsc-option-uiaccess-user">
+                            <label><input type="radio" name="ui_access_type" value="userid" <?php checked( $this->settings['ui_access_type'], 'userid' ); ?>><?php _e('User IDs: ', 'mythemeshop-connect'); ?></label>
+                            <input type="text" val="<?php echo esc_attr( $this->settings['ui_access_user'] ); ?>" name="ui_access_user" id="mtsc-ui-access-user">
+                            <span class="mtsc-label-yourid"><?php printf( __('Your User ID: %d', 'mythemeshop-connect'), get_current_user_id() ); ?></span>
+                        </div>
+
+                        <span class="mtsc-option-heading"><?php _e('Admin notices', 'mythemeshop-connect'); ?></span>
+                        <p class="description mtsc-description-notices"><?php _e('Control which notices to show.', 'mythemeshop-connect'); ?></p>
+                        <label for="" class="mtsc-label" id="mtsc-label-updatenotices">
+                            <input type="checkbox" name="update_notices" <?php checked( $this->settings['update_notices'] ); ?>> 
+                            <?php _e('Show update notices', 'mythemeshop-connect'); ?>
+                        </label>
+
+                        <label for="" class="mtsc-label" id="mtsc-label-networknotices">
+                            <input type="checkbox" name="network_notices" <?php checked( $this->settings['network_notices'] ); ?>> 
+                            <?php _e('Show network notices', 'mythemeshop-connect'); ?>
+                        </label>
+                        <p class="description mtsc-description-networknotices mtsc-description-networknotices-2"><?php _e('Network notices may include news related to the products you are using, special offers, and other useful information.', 'mythemeshop-connect'); ?></p>
+                        <div class="mtsc-clear-notices-wrapper">
+                            <input type="button" class="button button-secondary" name="" value="<?php esc_attr_e('Clear All Admin Notices', 'mythemeshop-connect'); ?>" id="mtsc-clear-notices">
+                            <span id="mtsc-clear-notices-success"><span class="dashicons dashicons-yes"></span> <?php _e('Notices cleared', 'mythemeshop-connect'); ?></span>
+                        </div>
+
+                        <input type="submit" class="button button-primary" value="<?php esc_attr_e('Save Settings', 'mythemeshop-connect'); ?>" data-savedmsg="<?php esc_attr_e('Settings Saved', 'mythemeshop-connect'); ?>">
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php
+
+    }
+
+    function new_updates_available( $transient ) {
+        if ( is_object( $transient ) && isset( $transient->response ) ) {
+            return count( $transient->response );
+        }
+        return 0;
     }
     
     function after_theme() {
-        add_action('admin_menu', array(&$this, 'remove_themeupdates_page'));
+        add_action('admin_menu', array($this, 'remove_themeupdates_page'));
     }
     function remove_themeupdates_page() {
         remove_submenu_page( 'index.php', 'mythemeshop-updates' );
     }
     
-    function connected() {
+    function is_connected() {
         return ( ! empty( $this->connect_data['connected'] ) );
     }
     
@@ -574,12 +771,39 @@ class mts_connection {
     }
     function get_settings() {
         $settings = get_option( $this->settings_option );
+        
         if (empty($settings)) {
             $settings = $this->default_settings;
             update_option( $this->settings_option, $settings );
+        } else {
+            // Set defaults if not set
+            $update_settings = false;
+            foreach ( $this->default_settings as $option => $default ) {
+                if ( ! isset( $settings[$option] ) ) {
+                    $settings[$option] = $default;
+                    $update_settings = true;
+                }
+            }
+            if ( $update_settings ) {
+                update_option( $this->settings_option, $settings );
+            }
         }
         return $settings;
     }
+
+    function set_settings( $new_settings ) {
+        foreach ( $this->default_settings as $setting_key => $setting_value ) {
+            if ( isset( $new_settings[$setting_key] ) ) {
+                $this->settings[$setting_key] = $new_settings[$setting_key];
+            }
+        }
+    }
+
+    function ajax_update_settings() {
+        $this->set_settings( $_POST );
+        $this->update_settings();
+    }
+
     function get_notices() {
         $notices = get_option( $this->notices_option );
         if (empty($notices)) $notices = array();

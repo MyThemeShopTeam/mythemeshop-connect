@@ -17,7 +17,8 @@
     width: auto;
     margin-top: 12px;
 }
-#mts_connect_form.loading:after {
+#mts_connect_form.loading:after,
+#mts_connect_settings_form.loading:after {
     content: "";
     position: absolute;
     top: 0;
@@ -26,6 +27,7 @@
     left: 0;
     background: rgba(241, 241, 241, 0.7);
 }
+
 #mts_connect_form label {
     font-weight: bold;
 }
@@ -89,7 +91,6 @@ label#mtsc-label-agree input {
     display: inline-block;
     font-style: italic;
     color: #777;
-    visibility: hidden;
 }
 
 #mtsc-connected {

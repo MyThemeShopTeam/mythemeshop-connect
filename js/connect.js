@@ -28,6 +28,34 @@ jQuery(document).ready(function($) {
     $('#mtsc-ui-access-user').focus(function(event) {
         $(this).parent().find('input[type="radio"]').prop('checked', true);
     });
+    $('#mts_connect_settings_form').submit(function(e) {
+        e.preventDefault();
+        var $this = $(this);
+        $.ajax({
+            url: ajaxurl,
+            method: 'post',
+            data: $this.serialize(),
+            beforeSend: function( xhr ) {
+                $this.addClass('loading');
+            },
+            success: function( data ) {
+                $this.removeClass('loading');
+            }
+        });
+    });
+    $('#mtsc-clear-notices').click(function(event) {
+        event.preventDefault();
+        $('.mts-connect-notice').hide();
+        $.ajax({
+            url: ajaxurl,
+            type: 'GET',
+            data: {action: 'mts_connect_reset_notices'},
+        });
+
+        $('#mtsc-clear-notices-success').show();
+        setTimeout(function() { $('#mtsc-clear-notices-success').hide(); }, 2000);
+    });
+    $('#mtsc-clear-notices-success').hide();
 
     // Connect form
     $('#mts_connect_form').submit(function(e) {
@@ -49,11 +77,11 @@ jQuery(document).ready(function($) {
             },
             success: function( data ) {
                 $this.removeClass('loading');
-                if (data !== null && data.login !== null) {
+                if (data !== null && typeof data.login !== 'undefined') {
                     $this.html(mtsconnect.l10n_ajax_login_success);
                     jQuery('#adminmenu .toplevel_page_mts-connect .dashicons-update').removeClass('disconnected').addClass('connected');
+                    console.log(data);
                     // check_themes
-                    /*
                     $.get(ajaxurl, 'action=mts_connect_check_themes').done(function() {
                         $this.append(mtsconnect.l10n_ajax_theme_check_done);
                         setTimeout(function() {
@@ -66,7 +94,6 @@ jQuery(document).ready(function($) {
                             });
                         }, 1000);
                     });
-                    */
                 } else { // status = fail
                     var errors = '';
                     /* $.each(data.errors, function(i, msg) {

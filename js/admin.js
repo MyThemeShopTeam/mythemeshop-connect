@@ -51,4 +51,5 @@ jQuery(document).ready(function($) {
     } else if (jQuery('body').hasClass('plugins-php')) {
         jQuery('h2 .add-new-h2').after(' <a href="'+mtsconnect.check_plugins_url+'" id="mts-connect-check-theme-updates" class="add-new-h2">'+mtsconnect.l10n_check_plugins_button+'</a>');
     }
+
 });

@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Theme/Plugin Updater
  * Plugin URI: http://www.mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 1.3.3
+ * Version: 1.3.4
  * Author: MyThemeShop
  * Author URI: http://www.mythemeshop.com
  * License: GPLv2
@@ -260,8 +260,8 @@ class mts_connection {
     }
     
     function force_check() {
-        $screen = get_current_screen();
         if (isset($_GET['force-check']) && $_GET['force-check'] == 1) {
+            $screen = get_current_screen();
             switch ($screen->id) {
                 case 'themes':
                 case 'themes-network':
@@ -278,7 +278,6 @@ class mts_connection {
                     $this->update_themes_now();
                     $this->update_plugins_now();
                 break;
-                
             }
         }
     }
@@ -322,6 +321,15 @@ class mts_connection {
 
         $mts_updates = get_site_transient('mts_update_themes');
         if ( ! $this->needs_check_now( $mts_updates ) ) {
+            // Add themes from our transient
+            if ( isset( $mts_updates->response ) ) {
+                foreach ( $mts_updates->response as $theme => $data ) {
+                    $folder_fix_theme = str_replace('mts_', '', $theme);
+                    if ( array_key_exists( $folder_fix_theme, $themes ) && isset( $data['new_version'] ) && version_compare( $themes[ $folder_fix_theme ], $data['new_version'], '<' ) ) {
+                        $update_transient->response[ $theme ] = $data;
+                    }
+                }
+            }
             return $update_transient;
         }
 
@@ -396,9 +404,17 @@ class mts_connection {
             return $update_transient;
         else
             $plugins = $update_transient->checked;
-        
+
         $mts_updates = get_site_transient('mts_update_plugins');
         if ( ! $this->needs_check_now( $mts_updates ) ) {
+            // Add plugins from our transient
+            if ( isset( $mts_updates->response ) ) {
+                foreach ( $mts_updates->response as $plugin => $data ) {
+                    if ( array_key_exists( $plugin, $plugins ) && isset( $data->new_version ) && version_compare( $plugins[ $plugin ], $data->new_version, '<' ) ) {
+                        $update_transient->response[ $plugin ] = $data;
+                    }
+                }
+            }
             return $update_transient;
         }
 
@@ -483,6 +499,7 @@ class mts_connection {
     * 
     */
     function needs_check_now( $updates_data ) {
+        if (isset($_GET['force-check']) && $_GET['force-check'] == 1) return true;
         if ( is_object( $updates_data ) && isset( $updates_data->last_checked ) && $updates_data->last_checked < ( time() + (60 * 60 * 24) ) ) {
             return false;
         }

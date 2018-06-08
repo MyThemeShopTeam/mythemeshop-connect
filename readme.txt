@@ -71,6 +71,10 @@ You can dismiss the update notification using close button present in notificati
 
 == Changelog ==
 
+= 1.3.4 (Jun 8, 2018) =
+* Fixed Themes/Plugins listings on "Dashboard -> Updates" page
+* "Check for updates now" button is again on Themes/Plugins page 
+
 = 1.3.3 (Jan 21, 2018) =
 * Added limit for update checks
 

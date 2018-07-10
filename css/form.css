@@ -1,54 +1,6 @@
 /*
 * MyThemeShop Connect
 */
-#mts_connect_form {
-    position: relative;
-    max-width: 300px;
-    margin: 20px auto 0 auto;
-    background: #fff;
-    padding: 16px 20px 20px 20px;
-}
-#mts_connect_form label {
-    display: block;
-    width: 100%;
-    margin: 5px 0;
-}
-#mts_connect_form input[type="submit"] {
-    width: auto;
-    margin-top: 12px;
-}
-#mts_connect_form.loading:after,
-#mts_connect_settings_form.loading:after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background: rgba(241, 241, 241, 0.7);
-}
-
-#mts_connect_form label {
-    font-weight: bold;
-}
-#mts_connect_form input {
-    margin-bottom: 10px;
-}
-#mts_username,
-#mts_password {
-    width: 100%;
-    font-size: 22px;
-}
-#mts_logo {
-    width: 220px;
-    margin: 0 auto 20px;
-    display: block;
-}
-
-#mts_connect_form .description {
-    margin-top: 0px;
-    margin-bottom: 20px;
-}
 
 .mtsc-option-heading {
     font-weight: bold;
@@ -140,10 +92,4 @@ span.mtsc-connected-msg-connected {
     border-right: 1px solid black;
     margin-right: 8px;
     padding-right: 4px;
-}
-
-.mtsc-error {
-    background: #ffe8e8;
-    border: 1px solid #c60000;
-    padding: 2px 6px;
 }

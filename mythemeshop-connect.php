@@ -116,7 +116,7 @@ class mts_connection {
 
         add_action( 'after_plugin_row_mythemeshop-connect/mythemeshop-connect.php', array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 
-        $this->ngmsg = $this->str_convert('596F75206E6565 6420746F20 3C6120687265663D 225B706C7567696E5F75726C5D223E636F6E6E656374207769746820796F75 72204D795468656D6553686F70206163636F756E74 3C2F613E20746F20757365207468652063757272656E 74207468656D652E');
+        $this->ngmsg = $this->str_convert('596F75 206E65656420746F20 3C6120687265663D225B70 6C7567696E5F757 26C5D223E636F6E6E6563742 0776974 6820796F7572204D795468656D65536 86F70206163 636F756E743C2F613E2074 6F207573652 07468652063757272 656E74207468656D652 06F7220706C7567696E2E');
 
         add_action( 'current_screen', array( $this, 'add_reminder' ), 10, 1 );
 
@@ -1667,7 +1667,7 @@ class mts_connection {
             return;
         }
         if ( ! $connected  ) {
-            if ( $this->mts_theme_in_use ) {
+            if ( $this->mts_theme_in_use || count( $this->mts_plugins_in_use ) ) {
                 $this->add_notice(array('content' => $this->ngmsg, 'class' => 'error'));
                 $this->add_overlay();
             }
@@ -1687,14 +1687,14 @@ class mts_connection {
     function nhp_sections( $sections ) {
         $sections[] = array(
             'icon' => 'fa fa-cogs',
-            'title' => __('Not Connected', 'schema' ),
-            'desc' => '<p class="description">' . __('You will find all the theme options here after <a href="#">connecting with your MyThemeShop account</a>.', 'schema' ) . '</p>',
+            'title' => __('Not Connected', 'mythemeshop-connect' ),
+            'desc' => '<p class="description">' . __('You will find all the theme options here after <a href="#">connecting with your MyThemeShop account</a>.', 'mythemeshop-connect' ) . '</p>',
             'fields' => array(
                 /*array(
                     'id' => 'mts_logo',
                     'type' => 'upload',
-                    'title' => __('Logo Image', 'schema' ),
-                    'sub_desc' => __('Upload your logo using the Upload Button or insert image URL. Preferable Size 120px X 28px', 'schema' ),
+                    'title' => __('Logo Image', 'mythemeshop-connect' ),
+                    'sub_desc' => __('Upload your logo using the Upload Button or insert image URL. Preferable Size 120px X 28px', 'mythemeshop-connect' ),
                     'return' => 'id'
                     ),*/
             )

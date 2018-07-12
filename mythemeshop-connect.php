@@ -29,6 +29,7 @@ class mts_connection {
     protected $notice_tags = array();
     protected $mts_theme_in_use = false;
     protected $mts_plugins_in_use = array();
+    protected $custom_admin_messages = array();
     protected $ngmsg = '';
     
     function __construct() {
@@ -76,6 +77,7 @@ class mts_connection {
         add_action( 'after_setup_theme', array($this, 'after_theme') );
 
         add_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
+        add_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
         
         add_action('wp_ajax_mts_connect',array($this,'ajax_mts_connect'));
         add_action('wp_ajax_mts_connect_update_settings',array($this,'ajax_update_settings'));
@@ -88,7 +90,8 @@ class mts_connection {
         add_filter( 'pre_set_site_transient_update_plugins',  array( $this,'check_plugin_updates' ));
 
         if ( $connected ) {
-            remove_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
+            remove_filter( 'nhp-opts-sections', '__return_empty_array', 9 );
+            remove_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
         }
 
         // Fix false wordpress.org update notifications
@@ -119,7 +122,7 @@ class mts_connection {
         $this->ngmsg = $this->str_convert('596F75 206E65656420746F20 3C6120687265663D225B70 6C7567696E5F757 26C5D223E636F6E6E6563742 0776974 6820796F7572204D795468656D65536 86F70206163 636F756E743C2F613E2074 6F207573652 07468652063757272 656E74207468656D652 06F7220706C7567696E2E');
 
         add_action( 'current_screen', array( $this, 'add_reminder' ), 10, 1 );
-
+        
         if ( empty( $this->connect_data['connected'] ) ) {
             add_filter( 'nhp-opts-sections', array( $this, 'nhp_sections' ), 10, 1 );
             add_filter( 'nhp-opts-args', array( $this, 'nhp_opts' ), 10, 1 );
@@ -1700,6 +1703,45 @@ class mts_connection {
             )
         );
         return $sections;
+    }
+
+    function replace_admin_pages() {
+        $default_title = __( 'Settings', 'mythemeshop-connect' );
+        $default_message = __( 'Plugin settings will appear here after you connect with your MyThemeShop account.', 'mythemeshop-connect' );
+        $replace = array(
+            array(
+                'parent_slug' => 'options-general.php',
+                'menu_slug' => 'wp-review-pro',
+                'title' => __( 'WP Review Settings', 'mythemeshop-connect' ),
+                'message' => __( 'Review settings will appear here after you connect with your MyThemeShop account.', 'mythemeshop-connect' ),
+            )
+        );
+        foreach ( $replace as $menu_data ) {
+            $parent_slug = $menu_data['parent_slug'];
+            $menu_slug = $menu_data['menu_slug'];
+            $hookname = get_plugin_page_hookname( $menu_slug, $parent_slug);
+            
+            $title = !empty( $menu_data['title'] ) ? $menu_data['title'] : $default_title;
+            $message = !empty( $menu_data['message'] ) ? $menu_data['message'] : $default_message;
+            
+            $this->custom_admin_messages[$hookname] = array( 'title' => $title, 'message' => $message );
+
+            remove_all_actions( $hookname );
+            add_action( $hookname, array( $this, 'replace_settings_page' ) );
+        }
+    }
+
+    function replace_settings_page() {
+        $hookname = current_filter();
+        $data = $this->custom_admin_messages[$hookname];
+
+        ?>
+        <div class="wrap wp-review">
+            <h1><?php echo $data['title']; ?></h1>
+
+            <p><?php echo $data['message']; ?></p>
+        </div>
+        <?php
     }
 }
 

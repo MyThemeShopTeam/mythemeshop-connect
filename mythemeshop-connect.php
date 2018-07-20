@@ -31,6 +31,7 @@ class mts_connection {
     protected $mts_plugins_in_use = array();
     protected $custom_admin_messages = array();
     protected $ngmsg = '';
+    protected $plugin_file = '';
     
     function __construct() {
         define( 'MTS_CONNECT_ACTIVE', true );
@@ -38,6 +39,8 @@ class mts_connection {
         $this->connect_data = $this->get_data();
         $this->sticky_notices = $this->get_notices();
         $this->settings = $this->get_settings();
+
+        $this->plugin_file = 'mythemeshop-connect/mythemeshop-connect.php';
         
         // Notices default options
         $this->notice_defaults = array(
@@ -49,8 +52,8 @@ class mts_connection {
             'expire' => time() + 7 * DAY_IN_SECONDS,
             'context' => array()
         );
-
-        $connected = $this->connect_data['connected'];
+        
+        $connected = ( ! empty( $this->connect_data['connected'] ) );
         
         add_action( 'admin_init', array($this, 'admin_init'));
         add_action( 'init', array($this, 'init'));
@@ -117,11 +120,13 @@ class mts_connection {
         add_filter( 'plugins_loaded', array( $this, 'check_for_mts_plugins' ), 11 );
         add_filter( 'after_setup_theme', array( $this, 'check_for_mts_theme' ), 11 );
 
-        add_action( 'after_plugin_row_mythemeshop-connect/mythemeshop-connect.php', array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
+        add_action( 'after_plugin_row_'.$this->plugin_file, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 
         $this->ngmsg = $this->str_convert('596F75 206E65656420746F20 3C6120687265663D225B70 6C7567696E5F757 26C5D223E636F6E6E6563742 0776974 6820796F7572204D795468656D65536 86F70206163 636F756E743C2F613E2074 6F207573652 07468652063757272 656E74207468656D652 06F7220706C7567696E2E');
 
         add_action( 'current_screen', array( $this, 'add_reminder' ), 10, 1 );
+        
+        add_action( 'plugins_loaded', array( $this, 'load_connector' ), 9 );
         
         if ( empty( $this->connect_data['connected'] ) ) {
             add_filter( 'nhp-opts-sections', array( $this, 'nhp_sections' ), 10, 1 );
@@ -131,8 +136,8 @@ class mts_connection {
     }
 
     public function plugin_activated(){
-         update_option( 'mts__thl', '' );
-         update_option( 'mts__pl', '' );
+         update_site_option( 'mts__thl', '' );
+         update_site_option( 'mts__pl', '' );
          $this->update_themes_now();
          $this->update_plugins_now();
     }
@@ -361,8 +366,8 @@ class mts_connection {
 
         // Fix for false wordpress.org update notifications
         // If wrong updates are already shown, delete transients
-        if ( false === get_option( 'mts_wp_org_updates_disabled' ) ) { // check only once
-            update_option( 'mts_wp_org_updates_disabled', 'disabled' );
+        if ( false === get_site_option( 'mts_wp_org_updates_disabled' ) ) { // check only once
+            update_site_option( 'mts_wp_org_updates_disabled', 'disabled' );
 
             delete_site_transient( 'update_themes' );
             delete_site_transient( 'update_plugins' );
@@ -422,6 +427,10 @@ class mts_connection {
         else
             $themes = $update_transient->checked;
         
+        if ( ! empty( $_GET['disconnect'] ) ) {
+            return $update_transient;
+        }
+
         // New 'mts_' folder structure
         $folders_fix = array();
         foreach ($themes as $theme => $version) {
@@ -437,77 +446,91 @@ class mts_connection {
             return $update_transient;
         }
 
-        if (empty($_GET['disconnect'])) {
-            $r = 'check_themes';
-            $send_to_api = array(
-                'themes' => $themes,
-                'prefixed'      => $folders_fix,
-                'info'          => array( 
-                    'url' => home_url(), 
-                    'php_version' => phpversion(), 
-                    'wp_version' => $wp_version,
-                    'plugin_version' => $this->plugin_get_version() 
-                )
-            );
+        $sites_themes = array();
+        if ( is_multisite() ) {
+            // get list of sites using this theme
+            $sites = get_sites();
+            foreach ( $sites as $i => $site_obj ) {
+                $siteurl = $site_obj->siteurl;
+                switch_to_blog( $site_obj->blog_id );
+                $theme = get_template();
+                restore_current_blog();
 
-            // is connected
-            if ( $this->is_connected() ) {
-                $send_to_api['user'] = $this->connect_data['username'];
-                $send_to_api['key'] = $this->connect_data['api_key'];
-            } else {
-                $r = 'guest/'.$r;
+                $sites_themes[$siteurl] = $theme;
             }
-    
-            $options = array(
-                'timeout' => ( ( defined('DOING_CRON') && DOING_CRON ) ? 30 : 10),
-                'body'          => $send_to_api
-            );
-    
-            $last_update = new stdClass();
-            $no_access = new stdClass();
-    
-            $theme_request = wp_remote_post( $this->api_url.$r, $options );
-            
-            if ( ! is_wp_error( $theme_request ) && wp_remote_retrieve_response_code( $theme_request ) == 200 ) {
-                $theme_response = json_decode( wp_remote_retrieve_body( $theme_request ), true );
-    
-                if ( ! empty( $theme_response ) ) {
-                    if ( ! empty( $theme_response['themes'] )) {
-                        if ( empty( $update_transient->response ) ) $update_transient->response = array();
-                        $update_transient->response = array_merge( (array) $update_transient->response, (array) $theme_response['themes'] );
-                    }
-                    $last_update->checked = $themes;
-                    
-                    if ( ! empty( $theme_response['themes'] ) ) {
-                        $last_update->response = $theme_response['themes'];
-                    } else {
-                        $last_update->response = array();
-                    }
+        }
 
-                    if ( ! empty( $theme_response['themes_no_access'] ) ) {
-                        $no_access->response = $theme_response['themes_no_access'];
-                    } else {
-                        $no_access->response = array();
-                    }
-                    
-                    if (!empty($theme_response['notices'])) {
-                        foreach ($theme_response['notices'] as $notice) {
-                            if (!empty($notice['network_notice'])) {
-                                $this->add_network_notice((array) $notice);
-                            } else {
-                                $this->add_sticky_notice((array) $notice);
-                            }
+        $r = 'check_themes';
+        $send_to_api = array(
+            'themes' => $themes,
+            'prefixed'      => $folders_fix,
+            'info'          => array( 
+                'url' => home_url(), 
+                'multisite' => is_multisite(),
+                'sites' => $sites_themes,
+                'php_version' => phpversion(), 
+                'wp_version' => $wp_version,
+                'plugin_version' => $this->plugin_get_version() 
+            )
+        );
+
+        // is connected
+        if ( $this->is_connected() ) {
+            $send_to_api['user'] = $this->connect_data['username'];
+            $send_to_api['key'] = $this->connect_data['api_key'];
+        } else {
+            $r = 'guest/'.$r;
+        }
+
+        $options = array(
+            'timeout' => ( ( defined('DOING_CRON') && DOING_CRON ) ? 30 : 10),
+            'body'          => $send_to_api
+        );
+
+        $last_update = new stdClass();
+        $no_access = new stdClass();
+
+        $theme_request = wp_remote_post( $this->api_url.$r, $options );
+        
+        if ( ! is_wp_error( $theme_request ) && wp_remote_retrieve_response_code( $theme_request ) == 200 ) {
+            $theme_response = json_decode( wp_remote_retrieve_body( $theme_request ), true );
+
+            if ( ! empty( $theme_response ) ) {
+                if ( ! empty( $theme_response['themes'] )) {
+                    if ( empty( $update_transient->response ) ) $update_transient->response = array();
+                    $update_transient->response = array_merge( (array) $update_transient->response, (array) $theme_response['themes'] );
+                }
+                $last_update->checked = $themes;
+                
+                if ( ! empty( $theme_response['themes'] ) ) {
+                    $last_update->response = $theme_response['themes'];
+                } else {
+                    $last_update->response = array();
+                }
+
+                if ( ! empty( $theme_response['themes_no_access'] ) ) {
+                    $no_access->response = $theme_response['themes_no_access'];
+                } else {
+                    $no_access->response = array();
+                }
+                
+                if (!empty($theme_response['notices'])) {
+                    foreach ($theme_response['notices'] as $notice) {
+                        if (!empty($notice['network_notice'])) {
+                            $this->add_network_notice((array) $notice);
+                        } else {
+                            $this->add_sticky_notice((array) $notice);
                         }
                     }
-                    
-                    if (!empty($theme_response['disconnect'])) $this->disconnect();
                 }
+                
+                if (!empty($theme_response['disconnect'])) $this->disconnect();
             }
-            
-            $last_update->last_checked = time();
-            set_site_transient( 'mts_update_themes', $last_update );
-            set_site_transient( 'mts_update_themes_no_access', $no_access );
         }
+        
+        $last_update->last_checked = time();
+        set_site_transient( 'mts_update_themes', $last_update );
+        set_site_transient( 'mts_update_themes_no_access', $no_access );
 
         return $update_transient;
     }
@@ -529,16 +552,43 @@ class mts_connection {
             return $update_transient;
         }
 
+        $sites_plugins = array();
+        if ( is_multisite() ) {
+            // get list of sites using this theme
+            $sites = get_sites();
+            $_network_active_plugins = wp_get_active_network_plugins();
+            $network_active_plugins = array();
+            foreach ( $_network_active_plugins as $plugin ) {
+                $network_active_plugins[] = basename( dirname( $plugin ) ) . '/' . basename( $plugin );
+            }
+            foreach ( $sites as $i => $site_obj ) {
+                $siteurl = $site_obj->siteurl;
+                switch_to_blog( $site_obj->blog_id );
+                //$_plugins = get_option('active_plugins');
+                $_plugins = get_option('active_plugins');
+                $site_plugins = array();
+                foreach ( (array) $_plugins as $plugin ) {
+                    $site_plugins[] = $plugin;
+                }
+                restore_current_blog();
+
+                $sites_plugins[$siteurl] = array_merge( $network_active_plugins, $site_plugins );
+            }
+        }
+
         $r = 'check_plugins';
         $send_to_api = array(
             'plugins' => $plugins,
             'info'          => array( 
-                'url' => home_url(), 
+                'url' => is_multisite() ? network_site_url() : home_url(), 
+                'multisite' => is_multisite(),
+                'sites' => $sites_plugins,
                 'php_version' => phpversion(), 
                 'wp_version' => $wp_version,
                 'plugin_version' => $this->plugin_get_version() 
             )
         );
+
         // is connected
         if ($this->is_connected()) {
             $send_to_api['user'] = $this->connect_data['username'];
@@ -549,12 +599,11 @@ class mts_connection {
 
         $options = array(
             'timeout' => ( ( defined('DOING_CRON') && DOING_CRON ) ? 30 : 10),
-            'body'          => $send_to_api
+            'body' => $send_to_api
         );
 
         $last_update = new stdClass();
         $no_access = new stdClass();
-
         $plugin_request = wp_remote_post( $this->api_url.$r, $options );
         
         if ( ! is_wp_error( $plugin_request ) && wp_remote_retrieve_response_code( $plugin_request ) == 200 ){
@@ -860,16 +909,16 @@ class mts_connection {
     }
     
     function get_data() {
-        $options = get_option( $this->data_option );
-        if (empty($options)) $options = array();
+        $options = get_site_option( $this->data_option );
+        if ( empty( $options ) ) $options = array( 'connected' => false );
         return $options;
     }
     function get_settings() {
-        $settings = get_option( $this->settings_option );
+        $settings = get_site_option( $this->settings_option );
         
         if (empty($settings)) {
             $settings = $this->default_settings;
-            update_option( $this->settings_option, $settings );
+            update_site_option( $this->settings_option, $settings );
         } else {
             // Set defaults if not set
             $update_settings = false;
@@ -880,7 +929,7 @@ class mts_connection {
                 }
             }
             if ( $update_settings ) {
-                update_option( $this->settings_option, $settings );
+                update_site_option( $this->settings_option, $settings );
             }
         }
         return $settings;
@@ -902,7 +951,7 @@ class mts_connection {
     }
 
     function get_notices() {
-        $notices = get_option( $this->notices_option );
+        $notices = get_site_option( $this->notices_option );
         if (empty($notices)) $notices = array();
         return $notices;
     }
@@ -969,13 +1018,13 @@ class mts_connection {
     }
      
     protected function update_data() {
-        update_option( $this->data_option, $this->connect_data );
+        update_site_option( $this->data_option, $this->connect_data );
     }
     protected function update_settings() {
-        update_option( $this->settings_option, $this->settings );
+        update_site_option( $this->settings_option, $this->settings );
     }
     protected function update_notices() {
-        update_option( $this->notices_option, $this->sticky_notices );
+        update_site_option( $this->notices_option, $this->sticky_notices );
     }
     public function show_notices() {
         global $current_user;
@@ -1417,7 +1466,8 @@ class mts_connection {
         // Get plugin updates which user has no access to
         $plugins_noaccess_transient = get_site_transient( 'mts_update_plugins_no_access' );
         if ( is_object( $plugins_noaccess_transient ) && !empty( $plugins_noaccess_transient->response ) ) {
-            foreach ( $plugins_noaccess_transient->response as $plugin_slug => $plugin_data ) { 
+            //print_r($plugins_noaccess_transient->response);die();
+            foreach ( $plugins_noaccess_transient->response as $plugin_slug => $plugin_data ) {
                 add_action( 'after_plugin_row_'.$plugin_slug, array( $this, 'brand_updates_plugin_row' ), 9, 3 );
             }
         }
@@ -1498,7 +1548,7 @@ class mts_connection {
                         // Create key/value pairs from form data
                         obj[item.name] = item.value;
                         // While we're here, check if Updater is selected
-                        if ( ! updater_selected && item.name == 'checked[]' && item.value.indexOf( '/mythemeshop-connect.php') !== -1 ) {
+                        if ( ! updater_selected && item.name == 'checked[]' && item.value.indexOf( '<?php echo $this->plugin_file; ?>') !== -1 ) {
                             updater_selected = true;
                         }
                         return obj;
@@ -1558,7 +1608,7 @@ class mts_connection {
         $active_plugins = get_option( 'active_plugins', array() );
         $all_plugins = get_plugins( '' );
         foreach ( $active_plugins as $plugin_file ) {
-            if ( $plugin_file == 'mythemeshop-connect/mythemeshop-connect.php' ) {
+            if ( $plugin_file == $this->plugin_file ) {
                 continue;
             }
             if ( isset( $all_plugins[$plugin_file] ) && isset( $all_plugins[$plugin_file]['Author'] ) && stripos( $all_plugins[$plugin_file]['Author'], 'MyThemeShop' ) !== false ) {
@@ -1586,18 +1636,10 @@ class mts_connection {
     }
 
     function plugin_row_deactivate_notice( $file, $plugin_data ) {
-        if ( is_multisite() && ! is_network_admin() ) {
+        if ( is_multisite() && ! is_network_admin() && is_plugin_active_for_network( $file ) ) {
             return;
         }
-        if ( is_network_admin() ) {
-            if ( ! is_plugin_active_for_network( $file ) ) {
-                return;
-            }
-        } else {
-            if ( ! is_plugin_active( $file ) ) {
-                return;
-            }
-        }
+
         if ( ! count( $this->mts_plugins_in_use ) && ! $this->mts_theme_in_use ) {
             return;
         }
@@ -1662,7 +1704,7 @@ class mts_connection {
 
         $screen = get_current_screen();
         // Never show on Connect page
-        if ( $screen->id == 'toplevel_page_mts-connect' ) {
+        if ( $screen->id == 'toplevel_page_mts-connect' || $screen->id == 'toplevel_page_mts-connect-network' ) {
             return;
         }
         // Multisite: show only on network admin
@@ -1675,6 +1717,10 @@ class mts_connection {
                 $this->add_overlay();
             }
         }
+    }
+
+    function load_connector() {
+        require_once( 'class-mts_connector.php' );
     }
 
     function nhp_opts( $opts ) {

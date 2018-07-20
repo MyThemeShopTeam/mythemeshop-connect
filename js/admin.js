@@ -47,9 +47,9 @@ jQuery(document).ready(function($) {
     
     // Extra buttons
     if (jQuery('body').hasClass('themes-php')) {
-        jQuery('h2 .add-new-h2').after(' <a href="'+mtsconnect.check_themes_url+'" id="mts-connect-check-theme-updates" class="add-new-h2">'+mtsconnect.l10n_check_themes_button+'</a>');
+        jQuery('.page-title-action').after(' <a href="'+mtsconnect.check_themes_url+'" id="mts-connect-check-theme-updates" class="add-new-h2">'+mtsconnect.l10n_check_themes_button+'</a>');
     } else if (jQuery('body').hasClass('plugins-php')) {
-        jQuery('h2 .add-new-h2').after(' <a href="'+mtsconnect.check_plugins_url+'" id="mts-connect-check-theme-updates" class="add-new-h2">'+mtsconnect.l10n_check_plugins_button+'</a>');
+        jQuery('.page-title-action').after(' <a href="'+mtsconnect.check_plugins_url+'" id="mts-connect-check-theme-updates" class="add-new-h2">'+mtsconnect.l10n_check_plugins_button+'</a>');
     }
     if ( jQuery('#mts-connect-modal').length ) {
         jQuery('#mts-connect-modal').show().find('p a.button:last-child').click(function(event) {

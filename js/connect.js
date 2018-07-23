@@ -6,47 +6,54 @@
  * Author URI: http://www.mythemeshop.com
  */
 jQuery(document).ready(function($) {
-    $('#mts_connect_form').submit(function(e) {
+
+    // Tabs
+    $('.mtsc-nav-tab-wrapper a').click(function(event) {
+        event.preventDefault();
+        window.location.hash = this.href.substring(this.href.indexOf('#')+1);
+    });
+    $(window).on('hashchange', function() {
+        var tab = window.location.hash.substr(1);
+        if ( tab == '' ) {
+            tab = 'mtsc-connect';
+        }
+        $('#mtsc-tabs').children().hide().filter('#'+tab).show();
+        $('#mtsc-nav-tab-wrapper').children().removeClass('nav-tab-active').filter('[href="#'+tab+'"]').addClass('nav-tab-active');
+    }).trigger('hashchange');
+
+    // Settings form
+    $('#mtsc-ui-access-role').focus(function(event) {
+        $(this).parent().find('input[type="radio"]').prop('checked', true);
+    });
+    $('#mtsc-ui-access-user').focus(function(event) {
+        $(this).parent().find('input[type="radio"]').prop('checked', true);
+    });
+    $('#mts_connect_settings_form').submit(function(e) {
         e.preventDefault();
         var $this = $(this);
-        /* if ($this.find('#mts_username').val().indexOf('@') > -1) {
-            $this.find('.error').remove();
-            $this.append('<p class="error">'+mtsconnect.l10n_insert_username+'</p>');
-            return true;
-        } */
         $.ajax({
             url: ajaxurl,
             method: 'post',
             data: $this.serialize(),
-            dataType: 'json',
             beforeSend: function( xhr ) {
                 $this.addClass('loading');
             },
             success: function( data ) {
                 $this.removeClass('loading');
-                if (data !== null && data.status == 'success') {
-                    $this.closest('.mts_connect_ui_content').html(mtsconnect.l10n_ajax_login_success);
-                    jQuery('#adminmenu .toplevel_page_mts-connect .dashicons-update').removeClass('disconnected').addClass('connected');
-                    $.get(ajaxurl, 'action=mts_connect_check_themes').done(function() {
-                        jQuery('.mts_connect_ui_content').append(mtsconnect.l10n_ajax_theme_check_done);
-                        setTimeout(function() {
-                            $.get(ajaxurl, 'action=mts_connect_check_plugins').done(function() {
-                                jQuery('.mts_connect_ui_content').append(mtsconnect.l10n_ajax_plugin_check_done);
-                                setTimeout(function() {
-                                    window.location.href = mtsconnect.pluginurl+'&updated=1';
-                                }, 100);
-                            });
-                        }, 1000);
-                    });
-                } else { // status = fail
-                    var errors = '';
-                    $.each(data.errors, function(i, msg) {
-                        errors += '<p class="error">'+msg+'</p>';
-                    });
-                    $this.find('.error').remove();
-                    $this.append(errors);
-                }
             }
         });
     });
+    $('#mtsc-clear-notices').click(function(event) {
+        event.preventDefault();
+        $('.mts-connect-notice').hide();
+        $.ajax({
+            url: ajaxurl,
+            type: 'GET',
+            data: {action: 'mts_connect_reset_notices'},
+        });
+
+        $('#mtsc-clear-notices-success').show();
+        setTimeout(function() { $('#mtsc-clear-notices-success').hide(); }, 2000);
+    });
+    $('#mtsc-clear-notices-success').hide();
 });

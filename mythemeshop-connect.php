@@ -13,7 +13,7 @@ defined('ABSPATH') or die;
 
 class mts_connection {
     // @TODO change API URL
-    private $api_url = "https://deving.mythemeshop.com/mtsapi/v1/";
+    private $api_url = "https://mythemeshop.com/mtsapi/v1/";
     
     private $settings_option = "mts_connect_settings";
     private $data_option = "mts_connect_data";

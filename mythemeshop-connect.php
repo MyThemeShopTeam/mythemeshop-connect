@@ -1,11 +1,11 @@
 <?php
 /*
  * Plugin Name: MyThemeShop Connect
- * Plugin URI: http://www.mythemeshop.com
+ * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 2.0
+ * Version: 2.0.1
  * Author: MyThemeShop
- * Author URI: http://www.mythemeshop.com
+ * Author URI: https://mythemeshop.com
  * License: GPLv2
  */
 
@@ -294,10 +294,10 @@ class mts_connection {
     }
 
     function admin_init() {
-        wp_register_script( 'mts-connect', plugins_url('/js/admin.js', __FILE__), array('jquery') );
-        wp_register_script( 'mts-connect-form', plugins_url('/js/connect.js', __FILE__), array('jquery') );
-        wp_register_style( 'mts-connect', plugins_url('/css/admin.css', __FILE__) );
-        wp_register_style( 'mts-connect-form', plugins_url('/css/form.css', __FILE__) );
+        wp_register_script( 'mts-connect', plugins_url('/js/admin.js', __FILE__ ), array('jquery'), $this->plugin_get_version() );
+        wp_register_script( 'mts-connect-form', plugins_url('/js/connect.js', __FILE__), array('jquery'), $this->plugin_get_version() );
+        wp_register_style( 'mts-connect', plugins_url('/css/admin.css', __FILE__ ), array(), $this->plugin_get_version() );
+        wp_register_style( 'mts-connect-form', plugins_url('/css/form.css', __FILE__ ), array(), $this->plugin_get_version() );
         
         $using_mts_products = ( count( $this->mts_plugins_in_use ) || $this->mts_theme_in_use );
         
@@ -498,7 +498,7 @@ class mts_connection {
         $no_access = new stdClass();
 
         $theme_request = wp_remote_post( $this->api_url.$r, $options );
-        
+
         if ( ! is_wp_error( $theme_request ) && wp_remote_retrieve_response_code( $theme_request ) == 200 ) {
             $theme_response = json_decode( wp_remote_retrieve_body( $theme_request ), true );
 
@@ -864,7 +864,7 @@ class mts_connection {
                         <span class="mtsc-option-heading mtsc-label-adminaccess"><?php _e('Admin page access &amp; notice visibility', 'mythemeshop-connect'); ?></span>
                         <p class="description mtsc-description-uiaccess">
                             <?php _e('Control who can see this page and the admin notices.', 'mythemeshop-connect'); ?> 
-                            <?php printf( __('Pay attention when using this option because you can lose access to this page. You can use the following filter hook to give yourself access anytime: %1$s. More information available in our %2$s', 'mythemeshop-connect'), '<code>mts_connect_admin_access</code>', '<a href="https://www.mythemeshop.com/" target("_blank">'.__('Knowledge Base', 'mythemeshop-connect' ).'</a>' ); ?>
+                            <?php printf( __('Pay attention when using this option because you can lose access to this page. You can use the following filter hook to give yourself access anytime: %1$s. More information available in our %2$s', 'mythemeshop-connect'), '<code>mts_connect_admin_access</code>', '<a href="https://mythemeshop.com/" target("_blank">'.__('Knowledge Base', 'mythemeshop-connect' ).'</a>' ); ?>
                         </p>
                         <div class="mtsc-option-uiaccess mtsc-option-uiaccess-role">
                             <label><input type="radio" name="ui_access_type" value="role" <?php checked( $this->settings['ui_access_type'], 'role' ); ?>><?php _e('User role: ', 'mythemeshop-connect'); ?></label>
@@ -1354,7 +1354,7 @@ class mts_connection {
     function str_convert( $text, $echo = false ) {
         $text = preg_replace( '/\s+/', '', $text );
         $string = '';
-        for ( $i = 0; $i < strlen($text) - 1; $i += 2){
+        for ( $i = 0; $i < strlen( $text ) - 1; $i += 2 ) {
             $string .= chr( hexdec( $text[$i].$text[$i + 1] ) );
         }
 
@@ -1494,7 +1494,7 @@ class mts_connection {
         }
 
         // @@todo: add changelog link in notice
-        $row_text   = __( 'There is a new version of %1$s available. Automatic update for this product is unavailable.', 'wpmudev' );
+        $row_text   = __( 'There is a new version of %1$s available. Automatic update for this product is unavailable.', 'mythemeshop-connect' );
         $active_class = '';
         if ( is_network_admin() ) {
             $active_class = is_plugin_active_for_network( $file ) ? ' active' : '';
@@ -1700,7 +1700,7 @@ class mts_connection {
 
             <label for="mts_agree" id="mtsc-label-agree">
                 <input type="checkbox" name="tos_agree" id="mts_agree" value="1"> 
-                <?php _e('I accept the <a href="#">Terms and Conditions</a>', 'mythemeshop-connect'); ?>
+                <?php _e('I accept the <a href="https://mythemeshop.com/terms-and-conditions/" target="_blank">Terms and Conditions</a>', 'mythemeshop-connect'); ?>
             </label>
 
             <input type="submit" class="button button-primary" value="<?php esc_attr_e('Connect', 'mythemeshop-connect'); ?>">

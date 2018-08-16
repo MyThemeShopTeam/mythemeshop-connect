@@ -71,6 +71,15 @@ You can dismiss the update notification using close button present in notificati
 
 == Changelog ==
 
+= 2.0.1 (Aug 16, 2018) =
+* Small fixes
+
+= 2.0 (Jul 23, 2018) =
+* New Dashboard
+* Added Settings page
+* Design changes
+* Bug Fixes
+
 = 1.3.4 (Jun 8, 2018) =
 * Fixed Themes/Plugins listings on "Dashboard -> Updates" page
 * "Check for updates now" button is again on Themes/Plugins page 
@@ -108,7 +117,7 @@ You can dismiss the update notification using close button present in notificati
 * Fixed theme update issue for themes using new folder name
 
 = 1.2.3 (Mar 15, 2015) =
-* Fixed - False “up to date” message for new theme updates.
+* Fixed - False "up to date" message for new theme updates.
 
 = 1.2.2 (Feb 28, 2015) =
 * Fixed false update notification from wordpress.org for MyThemeShop themes.

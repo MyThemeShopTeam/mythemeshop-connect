@@ -82,6 +82,9 @@ jQuery(document).ready(function($) {
                     $this.html(mtsconnect.l10n_ajax_login_success);
                     jQuery('#mts-connect-modal').find('p').first().hide();
                     jQuery('#adminmenu .toplevel_page_mts-connect .dashicons-update').removeClass('disconnected').addClass('connected');
+                    if ( jQuery('#mts-connect-modal').length ) {
+                        jQuery('#mts-connect-modal').find('.button-secondary').last().hide();
+                    }
                     // check_themes
                     $.get(ajaxurl, 'action=mts_connect_check_themes').done(function() {
                         $this.append(mtsconnect.l10n_ajax_theme_check_done);

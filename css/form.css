@@ -70,6 +70,12 @@ label#mtsc-label-agree input {
     border-color: #c60000;
 }
 
+.mtsc-status-icon .dashicons-yes:before {
+    position: relative;
+    left: -3px;
+    top: 1px;
+}
+
 .mtsc-status-text p {
     font-size: 20px;
     padding-top: 20px;

@@ -1807,5 +1807,3 @@ class mts_connection {
 }
 
 $mts_connection = new mts_connection();
-
-?>

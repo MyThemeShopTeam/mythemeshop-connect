@@ -3,8 +3,8 @@ Contributors: mythemeshop
 Creator's website link: http://mythemeshop.com/
 Tags: mythemeshop connect, mythemeshop, mythemeshop update, theme update
 Requires at least: 3.0.1
-Tested up to: 4.9.7
-Stable tag: 2.0
+Tested up to: 4.9.8
+Stable tag: 2.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,9 @@ You can dismiss the update notification using close button present in notificati
 4. Updating Theme
 
 == Changelog ==
+
+= 2.0.2 (Sep 26, 2018) =
+* Rank Math compatibility
 
 = 2.0.1 (Aug 16, 2018) =
 * Small fixes

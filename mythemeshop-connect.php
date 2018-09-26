@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 2.0.1
+ * Version: 2.0.2
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -549,6 +549,8 @@ class mts_connection {
             return $update_transient;
         else
             $plugins = $update_transient->checked;
+
+        unset( $plugins['seo-by-rank-math/rank-math.php'] );
 
         $mts_updates = get_site_transient('mts_update_plugins');
         if ( ! $this->needs_check_now( $mts_updates ) ) {
@@ -1335,7 +1337,16 @@ class mts_connection {
     }
 
     function install_plugin_information() {
-        $plugin = $_GET['plugin'];
+    	if ( empty( $_REQUEST['plugin'] ) ) {
+			return;
+		}
+        $plugin = wp_unslash( $_REQUEST['plugin'] );
+        $active_plugins = get_option( 'active_plugins', array() );
+        $rm_slug = 'seo-by-rank-math';
+        $rm_file = 'seo-by-rank-math/rank-math.php';
+        if ( in_array( $rm_file, $active_plugins ) && $plugin == $rm_slug ) {
+        	return;
+        }
         $transient = get_site_transient( 'mts_update_plugins' );
         if (is_object($transient) && !empty($transient->response)) {
             foreach ($transient->response as $plugin_path => $data) {

@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 2.0.2
+ * Version: 2.0.3
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -1760,10 +1760,11 @@ class mts_connection {
     }
 
     function nhp_sections( $sections ) {
+        $url = network_admin_url('admin.php?page=mts-connect');
         $sections[] = array(
             'icon' => 'fa fa-cogs',
             'title' => __('Not Connected', 'mythemeshop-connect' ),
-            'desc' => '<p class="description">' . __('You will find all the theme options here after <a href="#">connecting with your MyThemeShop account</a>.', 'mythemeshop-connect' ) . '</p>',
+            'desc' => '<p class="description">' . __('You will find all the theme options here after <a href="'.$url.'">connecting with your MyThemeShop account</a>.', 'mythemeshop-connect' ) . '</p>',
             'fields' => array(
                 /*array(
                     'id' => 'mts_logo',

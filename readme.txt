@@ -71,6 +71,9 @@ You can dismiss the update notification using close button present in notificati
 
 == Changelog ==
 
+= 2.0.5 (Oct 2, 2018) =
+* Added link to Connect from WP Review settings
+
 = 2.0.4 (Oct 1, 2018) =
 * Compatibility fix for newer MTS theme code
 

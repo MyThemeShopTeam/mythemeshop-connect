@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 2.0.4
+ * Version: 2.0.5
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -1791,19 +1791,26 @@ class mts_connection {
 
     function replace_admin_pages() {
         $default_title = __( 'Settings', 'mythemeshop-connect' );
-        $default_message = __( 'Plugin settings will appear here after you connect with your MyThemeShop account.', 'mythemeshop-connect' );
+        /* Translators: 1 is opening tag for link to admin page, 2 is closing tag for the same */
+        $default_message = sprintf( __( 'Plugin settings will appear here after you %1$sconnect with your MyThemeShop account.%2$s', 'mythemeshop-connect' ), '<a href="'.network_admin_url('admin.php?page=mts-connect').'">', '</a>' );
         $replace = array(
             array(
                 'parent_slug' => 'options-general.php',
                 'menu_slug' => 'wp-review-pro',
                 'title' => __( 'WP Review Settings', 'mythemeshop-connect' ),
-                'message' => __( 'Review settings will appear here after you connect with your MyThemeShop account.', 'mythemeshop-connect' ),
+                /* Translators: 1 is opening tag for link to admin page, 2 is closing tag for the same */
+                'message' => sprintf( __( 'Review settings will appear here after you %1$sconnect with your MyThemeShop account.%2$s', 'mythemeshop-connect' ), '<a href="'.network_admin_url('admin.php?page=mts-connect').'">', '</a>' ),
+            ),
+            array(
+                'parent_slug' => 'admin.php',
+                'menu_slug' => 'url_shortener_settings'
             )
         );
+
         foreach ( $replace as $menu_data ) {
             $parent_slug = $menu_data['parent_slug'];
             $menu_slug = $menu_data['menu_slug'];
-            $hookname = get_plugin_page_hookname( $menu_slug, $parent_slug);
+            $hookname = get_plugin_page_hookname( $menu_slug, $parent_slug );
             
             $title = !empty( $menu_data['title'] ) ? $menu_data['title'] : $default_title;
             $message = !empty( $menu_data['message'] ) ? $menu_data['message'] : $default_message;

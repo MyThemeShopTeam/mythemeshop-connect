@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
- * Version: 2.0.3
+ * Version: 2.0.4
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -131,6 +131,17 @@ class mts_connection {
             add_filter( 'nhp-opts-sections', array( $this, 'nhp_sections' ), 10, 1 );
             add_filter( 'nhp-opts-args', array( $this, 'nhp_opts' ), 10, 1 );
             add_filter( 'nhp-opts-extra-tabs', '__return_empty_array', 11, 1 );
+        }
+
+        add_action( 'init', array( $this, 'set_theme_defaults' ), -11, 1 );
+    }
+
+    public function set_theme_defaults() {
+        if ( defined( 'MTS_THEME_NAME' ) ) {
+            if ( ! get_option( MTS_THEME_NAME, false ) ) {
+                remove_filter( 'nhp-opts-sections', '__return_empty_array', 9 );
+                remove_filter( 'nhp-opts-sections', array( $this, 'nhp_sections' ), 10 );
+            }
         }
     }
 

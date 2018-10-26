@@ -1,4 +1,9 @@
 
+2.0.6 (Oct 26, 2018)
+-----------------------------
+- Fixed compatibility with WP Quiz Pro plugin
+
+
 2.0.5 (Oct 2, 2018)
 -----------------------------
 - Added link to Connect from WP Review settings

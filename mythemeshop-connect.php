@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.6
+ * Version: 2.0.7
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -1808,6 +1808,10 @@ class mts_connection {
             array(
                 'parent_slug' => 'edit.php?post_type=wp_quiz',
                 'menu_slug' => 'wp_quiz_config'
+            ),
+            array(
+                'parent_slug' => 'admin.php',
+                'menu_slug' => 'wp-shortcode-options-general'
             )
         );
 

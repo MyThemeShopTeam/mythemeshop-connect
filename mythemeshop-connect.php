@@ -1816,6 +1816,10 @@ class mts_connection {
             array(
                 'parent_slug' => 'edit.php?post_type=listing',
                 'menu_slug' => 'wre_options'
+            ),
+            array(
+                'parent_slug' => 'edit.php?post_type=mts_notification_bar',
+                'menu_slug' => 'mts-notification-bar'
             )
         );
 

@@ -1812,6 +1812,10 @@ class mts_connection {
             array(
                 'parent_slug' => 'admin.php',
                 'menu_slug' => 'wp-shortcode-options-general'
+            ),
+            array(
+                'parent_slug' => 'edit.php?post_type=listing',
+                'menu_slug' => 'wre_options'
             )
         );
 

@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.8
+ * Version: 2.0.9
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -1737,11 +1737,12 @@ class mts_connection {
     }
 
     function add_reminder() {
+        $exclude_pages = array( 'toplevel_page_mts-connect', 'toplevel_page_mts-connect-network', 'toplevel_page_mts-install-plugins' );
         $connected = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
 
         $screen = get_current_screen();
-        // Never show on Connect page
-        if ( $screen->id == 'toplevel_page_mts-connect' || $screen->id == 'toplevel_page_mts-connect-network' ) {
+        // Never show on excluded pages
+        if ( in_array( $screen->id, $exclude_pages ) ) {
             return;
         }
         // Multisite: show only on network admin
@@ -1827,6 +1828,17 @@ class mts_connection {
             )
         );
 
+        $hide_items = array( 
+            array( 
+                'parent_slug' => 'edit.php?post_type=wp_quiz', 
+                'menu_slug' => 'edit.php?post_type=wp_quiz' 
+            ),
+            array( 
+                'parent_slug' => 'edit.php?post_type=wp_quiz', 
+                'menu_slug' => 'post-new.php?post_type=wp_quiz' 
+            ),
+        );
+
         foreach ( $replace as $menu_data ) {
             $parent_slug = $menu_data['parent_slug'];
             $menu_slug = $menu_data['menu_slug'];
@@ -1840,6 +1852,28 @@ class mts_connection {
             remove_all_actions( $hookname );
             add_action( $hookname, array( $this, 'replace_settings_page' ) );
         }
+        
+        foreach ( $hide_items as $i => $item ) {
+            remove_submenu_page( $item['parent_slug'], $item['menu_slug'] );
+        }
+
+        add_action( 'add_meta_boxes', array( $this, 'remove_meta_boxes' ), 99, 2 );
+    }
+
+    function remove_meta_boxes( $post_type, $post ) {
+        $remove_meta_boxes = array(
+            'wp-review-metabox-review',
+            'wp-review-metabox-item',
+            'wp-review-metabox-reviewLinks',
+            'wp-review-metabox-desc',
+            'wp-review-metabox-userReview'
+        );
+        $post_types = get_post_types( array( 'public' => true ), 'names' );
+        foreach ( $post_types as $post_type ) {
+            foreach ( $remove_meta_boxes as $box ) {
+                remove_meta_box( $box, $post_type, 'normal' );
+            }
+        }
     }
 
     function replace_settings_page() {
@@ -1852,6 +1886,7 @@ class mts_connection {
 
             <p><?php echo $data['message']; ?></p>
         </div>
+        <script type="text/javascript">var mts_connect_refresh = true;</script>
         <?php
     }
 }

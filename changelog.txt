@@ -1,3 +1,8 @@
+2.0.9 (Nov 5, 2018)
+-----------------------------
+- Improved compatibility with several plugins
+
+
 2.0.8 (Nov 2, 2018)
 -----------------------------
 - Compatibility with WP Real Estate Pro, WP Notification Pro, WP Subscribe Pro

@@ -93,6 +93,10 @@ jQuery(document).ready(function($) {
                             $.get(ajaxurl, 'action=mts_connect_check_plugins').done(function() {
                                 $this.append(mtsconnect.l10n_ajax_plugin_check_done);
                                 if ( $('#mts-connect-modal').length ) {
+                                    if ( typeof mts_connect_refresh != 'undefined' && mts_connect_refresh === true ) {
+                                        window.location.reload(true);
+                                        return;
+                                    }
                                     $('#mts-connect-modal').remove();
                                 } else {
                                     $this.append(mtsconnect.l10n_ajax_refreshing);

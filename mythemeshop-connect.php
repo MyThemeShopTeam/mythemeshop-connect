@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.10
+ * Version: 2.0.11
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -356,6 +356,7 @@ class mts_connection {
             'l10n_insert_username' => __('Please insert your MyThemeShop <strong>username</strong> instead of the email address you registered with.', 'mythemeshop-connect'),
             'l10n_accept_tos' => __('You have to accept the terms.', 'mythemeshop-connect'),
             'l10n_confirm_deactivate' => __('You have a currently active MyThemeShop theme or plugin on this site. If you deactivate this required plugin, other MyThemeShop products may not function correctly and they may be automatically deactivated.', 'mythemeshop-connect'),
+            'l10n_ajax_unknown_error' => __('An unknown error occured. Please get in touch with MyThemeShop support team.', 'mythemeshop-connect'),
         ) );
         
         // Enqueue on all admin pages because notice may appear anywhere

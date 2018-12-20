@@ -1,5 +1,5 @@
 /*
- * Plugin Name: MyThemeShop Connect
+ * Plugin: MyThemeShop Connect
  * Plugin URI: http://www.mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
  * Author: MyThemeShop
@@ -109,10 +109,16 @@ jQuery(document).ready(function($) {
                     });
                 } else { // status = fail
                     var errors = '';
-                    /* $.each(data.errors, function(i, msg) {
-                        errors += '<p class="mtsc-error">'+msg+'</p>';
-                    }); */
-                    errors = '<p class="mtsc-error">'+data.message+'</p>';
+                    var error_msg = '';
+                    if ( typeof data.message !== 'undefined' ) {
+                        error_msg = data.message;
+                    } else if ( typeof data.errors !== 'undefined' ) {
+                        error_msg = data.errors[0];
+                    } else {
+                        error_msg = mtsconnect.l10n_ajax_unknown_error + '<pre style="white-space: pre-wrap;">Response: ' + JSON.stringify(data) + '</pre>';
+                    }
+
+                    errors = '<p class="mtsc-error">' + error_msg + '</p>';
                     $this.find('.mtsc-error').remove();
                     $this.append(errors);
                 }

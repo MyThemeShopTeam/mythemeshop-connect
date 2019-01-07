@@ -1,3 +1,8 @@
+2.0.13 (Jan 7, 2018)
+-----------------------------
+- Moved CSS & JS enqueue functions to avoid notice
+
+
 2.0.12 (Dec 21, 2018)
 -----------------------------
 - Fixed PHP warning

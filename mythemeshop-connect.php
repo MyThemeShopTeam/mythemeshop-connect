@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.12
+ * Version: 2.0.13
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -54,8 +54,9 @@ class mts_connection {
         
         $connected = ( ! empty( $this->connect_data['connected'] ) );
         
-        add_action( 'admin_init', array($this, 'admin_init'));
-        add_action( 'init', array($this, 'init'));
+        add_action( 'admin_init', array( $this, 'admin_init' ) );
+        add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+        add_action( 'init', array( $this, 'init' ) );
         //add_action( 'admin_print_scripts', array($this, 'admin_inline_js'));        
         
         add_action( 'load-themes.php', array( $this, 'force_check' ), 9);
@@ -305,10 +306,6 @@ class mts_connection {
     }
 
     function admin_init() {
-        wp_register_script( 'mts-connect', plugins_url('/js/admin.js', __FILE__ ), array('jquery'), $this->plugin_get_version() );
-        wp_register_script( 'mts-connect-form', plugins_url('/js/connect.js', __FILE__), array('jquery'), $this->plugin_get_version() );
-        wp_register_style( 'mts-connect', plugins_url('/css/admin.css', __FILE__ ), array(), $this->plugin_get_version() );
-        wp_register_style( 'mts-connect-form', plugins_url('/css/form.css', __FILE__ ), array(), $this->plugin_get_version() );
         
         $using_mts_products = ( count( $this->mts_plugins_in_use ) || $this->mts_theme_in_use );
         
@@ -340,6 +337,34 @@ class mts_connection {
                 $icon_class_attr = 'disconnected'; // red
             }
         }
+        
+        $current_user = wp_get_current_user();
+        // Tags to use in notifications
+        $this->notice_tags = array(
+            '[logo_url]' => plugins_url( 'img/mythemeshop-logo.png' , __FILE__ ),
+            '[plugin_url]' => network_admin_url('admin.php?page=mts-connect'),
+            '[themes_url]' => network_admin_url('themes.php'),
+            '[plugins_url]' => network_admin_url('plugins.php'),
+            '[updates_url]' => network_admin_url('update-core.php'),
+            '[site_url]' => site_url(),
+            '[user_firstname]' => $current_user->first_name
+        );
+
+        // Fix for false wordpress.org update notifications
+        // If wrong updates are already shown, delete transients
+        if ( false === get_site_option( 'mts_wp_org_updates_disabled' ) ) { // check only once
+            update_site_option( 'mts_wp_org_updates_disabled', 'disabled' );
+
+            delete_site_transient( 'update_themes' );
+            delete_site_transient( 'update_plugins' );
+        }
+    }
+
+    function admin_enqueue_scripts( $hook_suffix ) {
+        wp_register_script( 'mts-connect', plugins_url('/js/admin.js', __FILE__ ), array('jquery'), $this->plugin_get_version() );
+        wp_register_script( 'mts-connect-form', plugins_url('/js/connect.js', __FILE__), array('jquery'), $this->plugin_get_version() );
+        wp_register_style( 'mts-connect', plugins_url('/css/admin.css', __FILE__ ), array(), $this->plugin_get_version() );
+        wp_register_style( 'mts-connect-form', plugins_url('/css/form.css', __FILE__ ), array(), $this->plugin_get_version() );
 
         wp_localize_script('mts-connect', 'mtsconnect', array(
             'pluginurl' => network_admin_url('admin.php?page=mts-connect'),
@@ -362,26 +387,10 @@ class mts_connection {
         // Enqueue on all admin pages because notice may appear anywhere
         wp_enqueue_script( 'mts-connect' );
         wp_enqueue_style( 'mts-connect' );
-        
-        $current_user = wp_get_current_user();
-        // Tags to use in notifications
-        $this->notice_tags = array(
-            '[logo_url]' => plugins_url( 'img/mythemeshop-logo.png' , __FILE__ ),
-            '[plugin_url]' => network_admin_url('admin.php?page=mts-connect'),
-            '[themes_url]' => network_admin_url('themes.php'),
-            '[plugins_url]' => network_admin_url('plugins.php'),
-            '[updates_url]' => network_admin_url('update-core.php'),
-            '[site_url]' => site_url(),
-            '[user_firstname]' => $current_user->first_name
-        );
 
-        // Fix for false wordpress.org update notifications
-        // If wrong updates are already shown, delete transients
-        if ( false === get_site_option( 'mts_wp_org_updates_disabled' ) ) { // check only once
-            update_site_option( 'mts_wp_org_updates_disabled', 'disabled' );
-
-            delete_site_transient( 'update_themes' );
-            delete_site_transient( 'update_plugins' );
+        if ( $hook_suffix == 'toplevel_page_mts-connect' ) {
+            wp_enqueue_script('mts-connect-form');
+            wp_enqueue_style('mts-connect-form');
         }
     }
     
@@ -736,8 +745,6 @@ class mts_connection {
     }
     
     public function show_ui() {
-        wp_enqueue_script('mts-connect-form');
-        wp_enqueue_style('mts-connect-form');
         /* 
         echo '<div class="mts_connect_ui">';
         // echo '<h2>'.__('MyThemeShop Connect', 'mythemeshop-connect').'</h2>';
@@ -821,9 +828,6 @@ class mts_connection {
                 $plugin_updates_required = true;
             }
         }
-
-        // Check for updates which user cannot access -- either because their membership is expired or because they ran out of domains
-        // @@todo
 
         ?>
         <div class="mts_connect_ui_content">
@@ -1355,15 +1359,15 @@ class mts_connection {
     }
 
     function install_plugin_information() {
-    	if ( empty( $_REQUEST['plugin'] ) ) {
-			return;
-		}
+        if ( empty( $_REQUEST['plugin'] ) ) {
+            return;
+        }
         $plugin = wp_unslash( $_REQUEST['plugin'] );
         $active_plugins = get_option( 'active_plugins', array() );
         $rm_slug = 'seo-by-rank-math';
         $rm_file = 'seo-by-rank-math/rank-math.php';
         if ( in_array( $rm_file, $active_plugins ) && $plugin == $rm_slug ) {
-        	return;
+            return;
         }
         $transient = get_site_transient( 'mts_update_plugins' );
         if (is_object($transient) && !empty($transient->response)) {

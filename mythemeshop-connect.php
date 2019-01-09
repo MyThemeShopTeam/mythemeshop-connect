@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.13
+ * Version: 2.0.14
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -279,6 +279,9 @@ class mts_connection {
     }
     
     function admin_menu() {
+        global $current_user;
+        $user_id = $current_user->ID;
+
         $ui_access_type = $this->settings['ui_access_type'];
         $ui_access_role = $this->settings['ui_access_role'];
         $ui_access_user = $this->settings['ui_access_user'];
@@ -286,57 +289,32 @@ class mts_connection {
         $admin_page_role = 'manage_options';
         $allow_admin_access = false;
         if ( $ui_access_type == 'role' ) {
-            $admin_page_role = $ui_access_role;
+            $allow_admin_access = current_user_can( $ui_access_role );
         } else { // ui_access_type = user (IDs)
-            $allow_admin_access = in_array( get_current_user_id(), array_map('absint', explode( ',', $ui_access_user ) ) );
+            $allow_admin_access = in_array( $user_id, array_map('absint', explode( ',', $ui_access_user ) ) );
         }
 
-        $allow_admin_access = apply_filters( 'mts_connect_admin_access', true );
+        $allow_admin_access = apply_filters( 'mts_connect_admin_access', $allow_admin_access );
 
-        // Add the new admin menu and page and save the returned hook suffix
-        if ( $ui_access_type == 'role' || $allow_admin_access ) {
-            $this->menu_hook_suffix = add_menu_page('MyThemeShop Connect', 'MyThemeShop', $admin_page_role, 'mts-connect', array( $this, 'show_ui' ), 'dashicons-update', 66 );
-            // Use the hook suffix to compose the hook and register an action executed when plugin's options page is loaded
-            add_action( 'load-' . $this->menu_hook_suffix , array( $this, 'ui_onload' ) );
+        if ( ! $allow_admin_access ) {
+            return;
         }
+
+        // Add the new admin menu and page and save the returned hook suffix    
+        $this->menu_hook_suffix = add_menu_page('MyThemeShop Connect', 'MyThemeShop', $admin_page_role, 'mts-connect', array( $this, 'show_ui' ), 'dashicons-update', 66 );
+        // Use the hook suffix to compose the hook and register an action executed when plugin's options page is loaded
+        add_action( 'load-' . $this->menu_hook_suffix , array( $this, 'ui_onload' ) );
+    
     }
     
     function init() {
         define( 'MTS_THEME_T', 'mts'.'the' );
     }
 
-    function admin_init() {
-        
-        $using_mts_products = ( count( $this->mts_plugins_in_use ) || $this->mts_theme_in_use );
-        
+    function admin_init() {        
         $connected = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
         
-        $updates_available = false;
-        $transient = get_site_transient( 'mts_update_plugins' );
-        if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
-            $updates_available = true;
-        }
-        $transient = get_site_transient( 'mts_update_plugins_no_access' );
-        if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
-            $updates_available = true;
-        }
-        $transient = get_site_transient( 'mts_update_themes' );
-        if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
-            $updates_available = true;
-        }
-        $transient = get_site_transient( 'mts_update_themes_no_access' );
-        if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
-            $updates_available = true;
-        }
-        
-        $icon_class_attr = 'disconnected';
-        if ( $connected ) {
-            $icon_class_attr = 'connected';
-            if ( $updates_available ) {
-                //$icon_class_attr = 'updates-available'; // yellow
-                $icon_class_attr = 'disconnected'; // red
-            }
-        }
+        $updates_available = $this->new_updates_available();
         
         $current_user = wp_get_current_user();
         // Tags to use in notifications
@@ -366,6 +344,19 @@ class mts_connection {
         wp_register_style( 'mts-connect', plugins_url('/css/admin.css', __FILE__ ), array(), $this->plugin_get_version() );
         wp_register_style( 'mts-connect-form', plugins_url('/css/form.css', __FILE__ ), array(), $this->plugin_get_version() );
 
+        $connected = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
+        
+        $updates_available = $this->new_updates_available();
+        $using_mts_products = ( count( $this->mts_plugins_in_use ) || $this->mts_theme_in_use );
+        $icon_class_attr = 'disconnected';
+        if ( $connected ) {
+            $icon_class_attr = 'connected';
+            if ( $updates_available ) {
+                //$icon_class_attr = 'updates-available'; // yellow
+                $icon_class_attr = 'disconnected'; // red
+            }
+        }
+
         wp_localize_script('mts-connect', 'mtsconnect', array(
             'pluginurl' => network_admin_url('admin.php?page=mts-connect'),
             'icon_class_attr' => $icon_class_attr,
@@ -379,7 +370,7 @@ class mts_connection {
             'l10n_check_themes_button' => __('Check for updates now', 'mythemeshop-connect'),
             'l10n_check_plugins_button' => __('Check for updates now', 'mythemeshop-connect'),
             'l10n_insert_username' => __('Please insert your MyThemeShop <strong>username</strong> instead of the email address you registered with.', 'mythemeshop-connect'),
-            'l10n_accept_tos' => __('You have to accept the terms.', 'mythemeshop-connect'),
+            'l10n_accept_tos' => __('Please accept the terms to connect.', 'mythemeshop-connect'),
             'l10n_confirm_deactivate' => __('You have a currently active MyThemeShop theme or plugin on this site. If you deactivate this required plugin, other MyThemeShop products may not function correctly and they may be automatically deactivated.', 'mythemeshop-connect'),
             'l10n_ajax_unknown_error' => __('An unknown error occured. Please get in touch with MyThemeShop support team.', 'mythemeshop-connect'),
         ) );
@@ -929,7 +920,27 @@ class mts_connection {
 
     }
 
-    function new_updates_available( $transient ) {
+    function new_updates_available( $transient = null ) {
+        if ( ! $transient ) {
+            $updates_available = false;
+            $transient = get_site_transient( 'mts_update_plugins' );
+            if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
+                $updates_available = true;
+            }
+            $transient = get_site_transient( 'mts_update_plugins_no_access' );
+            if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
+                $updates_available = true;
+            }
+            $transient = get_site_transient( 'mts_update_themes' );
+            if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
+                $updates_available = true;
+            }
+            $transient = get_site_transient( 'mts_update_themes_no_access' );
+            if ( ! $updates_available && is_object($transient) && !empty($transient->response)) {
+                $updates_available = true;
+            }
+            return $updates_available;
+        }
         if ( is_object( $transient ) && isset( $transient->response ) ) {
             return count( $transient->response );
         }
@@ -1076,14 +1087,14 @@ class mts_connection {
         $admin_page_role = 'manage_options';
         $allow_admin_access = false;
         if ( $ui_access_type == 'role' ) {
-            $admin_page_role = $ui_access_role;
+            $allow_admin_access = current_user_can( $ui_access_role );
         } else { // ui_access_type = user (IDs)
             $allow_admin_access = in_array( $user_id, array_map('absint', explode( ',', $ui_access_user ) ) );
         }
 
         $allow_admin_access = apply_filters( 'mts_connect_admin_access', $allow_admin_access );
 
-        if ( ( $ui_access_type == 'role' && ! current_user_can( $ui_access_role ) ) && ! $allow_admin_access ) {
+        if ( ! $allow_admin_access ) {
             return;
         }
 

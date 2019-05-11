@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.14
+ * Version: 2.0.15
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -12,6 +12,7 @@
 defined('ABSPATH') or die;
 
 class mts_connection {
+    const PLUGIN_VERSION = '2.0.15';
     private $api_url = "https://mythemeshop.com/mtsapi/v1/";
     
     private $settings_option = "mts_connect_settings";
@@ -27,7 +28,7 @@ class mts_connection {
     protected $notice_defaults = array();
     protected $notice_tags = array();
     protected $mts_theme_in_use = false;
-    protected $mts_plugins_in_use = array();
+    protected $mts_plugins_in_use = 0;
     protected $custom_admin_messages = array();
     protected $ngmsg = '';
     protected $plugin_file = '';
@@ -119,6 +120,7 @@ class mts_connection {
         
         add_filter( 'plugins_loaded', array( $this, 'check_for_mts_plugins' ), 11 );
         add_filter( 'after_setup_theme', array( $this, 'check_for_mts_theme' ), 11 );
+        add_filter( 'after_switch_theme', array( $this, 'clear_theme_check' ), 11 );
 
         add_action( 'after_plugin_row_'.$this->plugin_file, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 
@@ -347,7 +349,7 @@ class mts_connection {
         $connected = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
         
         $updates_available = $this->new_updates_available();
-        $using_mts_products = ( count( $this->mts_plugins_in_use ) || $this->mts_theme_in_use );
+        $using_mts_products = ( $this->mts_plugins_in_use || $this->mts_theme_in_use );
         $icon_class_attr = 'disconnected';
         if ( $connected ) {
             $icon_class_attr = 'connected';
@@ -424,9 +426,7 @@ class mts_connection {
     }
     
     function plugin_get_version() {
-        $plugin_data = get_plugin_data( __FILE__ );
-        $plugin_version = $plugin_data['Version'];
-        return $plugin_version;
+        return self::PLUGIN_VERSION;
     }
     
     function check_theme_updates( $update_transient ){
@@ -514,7 +514,6 @@ class mts_connection {
 
         $last_update = new stdClass();
         $no_access = new stdClass();
-
         $theme_request = wp_remote_post( $this->api_url.$r, $options );
 
         if ( ! is_wp_error( $theme_request ) && wp_remote_retrieve_response_code( $theme_request ) == 200 ) {
@@ -1666,21 +1665,44 @@ class mts_connection {
         }
         $active_plugins = get_option( 'active_plugins', array() );
         $all_plugins = get_plugins( '' );
+
+        $hash = substr( md5( serialize( $active_plugins ) ), 0, 8 );
+        $opt = get_option( 'mts_plugins_active', false );
+        if ( $opt !== false ) {
+            $stored_hash = substr( $opt, 0, 8 );
+            if ( $hash == $stored_hash ) {
+                // No change in the list of plugins
+                $this->mts_plugins_in_use = (int) substr( $opt, 9 );
+                return;
+            }
+        }
+
         foreach ( $active_plugins as $plugin_file ) {
             if ( $plugin_file == $this->plugin_file ) {
                 continue;
             }
             if ( isset( $all_plugins[$plugin_file] ) && isset( $all_plugins[$plugin_file]['Author'] ) && stripos( $all_plugins[$plugin_file]['Author'], 'MyThemeShop' ) !== false ) {
-                $this->mts_plugins_in_use[$plugin_file] = $all_plugins[$plugin_file]['Name'].' v'.$all_plugins[$plugin_file]['Version'];
+                $this->mts_plugins_in_use++;
             }
         }
+
+        update_option( 'mts_plugins_active', $hash . '-' . $this->mts_plugins_in_use );
+        return;
+
     }
 
     function check_for_mts_theme() {
+        // Check for mts_theme once.
+        if ( ( $stored = get_option( 'mts_theme_active', false ) ) !== false ) {
+            $this->mts_theme_in_use = ( $stored === '1' );
+            return;
+        }
+
         $theme = wp_get_theme();
         $author = $theme->get('Author');
         if ( stripos( $author, 'MyThemeShop' ) !== false ) {
             $this->mts_theme_in_use = true;
+            update_option( 'mts_theme_active', '1' );
             return;
         }
         
@@ -1689,9 +1711,17 @@ class mts_connection {
             $parent_author = $theme->parent()->get('Author');
             if ( stripos( $parent_author, 'MyThemeShop' ) !== false ) {
                 $this->mts_theme_in_use = true;
+                update_option( 'mts_theme_active', '1' );
                 return;
             }
         }
+
+        update_option( 'mts_theme_active', '0' );
+        return;
+    }
+
+    function clear_theme_check() {
+        delete_option( 'mts_theme_active' );
     }
 
     function plugin_row_deactivate_notice( $file, $plugin_data ) {
@@ -1699,7 +1729,7 @@ class mts_connection {
             return;
         }
 
-        if ( ! count( $this->mts_plugins_in_use ) && ! $this->mts_theme_in_use ) {
+        if ( ! $this->mts_plugins_in_use && ! $this->mts_theme_in_use ) {
             return;
         }
 
@@ -1772,7 +1802,7 @@ class mts_connection {
             return;
         }
         if ( ! $connected  ) {
-            if ( $this->mts_theme_in_use || count( $this->mts_plugins_in_use ) ) {
+            if ( $this->mts_theme_in_use || $this->mts_plugins_in_use ) {
                 $this->add_notice(array('content' => $this->ngmsg, 'class' => 'error'));
                 $this->add_overlay();
             }

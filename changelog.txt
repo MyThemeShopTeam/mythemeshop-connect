@@ -1,3 +1,8 @@
+2.0.16 (Jul 2, 2019)
+-----------------------------
+- Added new filters for developers to exclude products from the update process
+
+
 2.0.15 (May 11, 2019)
 -----------------------------
 - Optimized resource usage

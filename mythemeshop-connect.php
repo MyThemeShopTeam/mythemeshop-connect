@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Connect
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.15
+ * Version: 2.0.16
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -12,7 +12,7 @@
 defined('ABSPATH') or die;
 
 class mts_connection {
-    const PLUGIN_VERSION = '2.0.15';
+    const PLUGIN_VERSION = '2.0.16';
     private $api_url = "https://mythemeshop.com/mtsapi/v1/";
     
     private $settings_option = "mts_connect_settings";
@@ -444,6 +444,12 @@ class mts_connection {
         // New 'mts_' folder structure
         $folders_fix = array();
         foreach ($themes as $theme => $version) {
+            // Skip selected themes
+            if ( ! apply_filters( 'mts_connect_update_theme_' . $theme, true, $version ) ) {
+                unset( $themes[$theme] );
+                continue;
+            }
+
             if ( $theme == 'sociallyviral' && ! in_array( 'sociallyviral', $folders_fix ) ) {
                 // SociallyViral free - exclude from API check
                 unset( $themes[$theme] );
@@ -568,6 +574,7 @@ class mts_connection {
             $plugins = $update_transient->checked;
 
         unset( $plugins['seo-by-rank-math/rank-math.php'] );
+        unset( $plugins['seo-by-rank-math-pro/rank-math-pro.php'] );
 
         $mts_updates = get_site_transient('mts_update_plugins');
         if ( ! $this->needs_check_now( $mts_updates ) ) {
@@ -607,6 +614,14 @@ class mts_connection {
                 restore_current_blog();
 
                 $sites_plugins[$siteurl] = array_merge( $network_active_plugins, $site_plugins );
+            }
+        }
+
+        foreach ( $plugins as $plugin_file => $plugin_version ) {
+            // Skip selected plugins
+            if ( ! apply_filters( 'mts_connect_update_plugin_' . $plugin_file, true, $plugin_version ) ) {
+                unset( $plugins[ $plugin_file ] );
+                continue;
             }
         }
 
@@ -735,64 +750,6 @@ class mts_connection {
     }
     
     public function show_ui() {
-        /* 
-        echo '<div class="mts_connect_ui">';
-        // echo '<h2>'.__('MyThemeShop Connect', 'mythemeshop-connect').'</h2>';
-        echo '<div class="mts_connect_ui_content">';
-        echo '<nav class="nav-tab-wrapper mtsc-nav-tab-wrapper">';
-        echo '<a href="#" class="nav-tab nav-tab-active" data-tabcontent="connect">'.__('Connect', 'mythemeshop-connect').'</a>';
-        echo '<a href="#" class="nav-tab" data-tabcontent="settings">'.__('Settings', 'mythemeshop-connect').'</a>';
-        echo '</nav>';
-        echo '<div id="mtsc-tabs">';
-
-        echo '<div id="mtsc-tab-connect">';
-
-        if ( $this->is_connected() ) {
-            
-            echo '<p>'.__('Connected!', 'mythemeshop-connect').'</br>';
-            echo __('MyThemeShop username:', 'mythemeshop-connect').' <strong>'.$this->connect_data['username'].'</strong></p>';
-            echo '<a href="'.esc_url(add_query_arg('disconnect', '1')).'">'.__('Disconnect', 'mythemeshop-connect').'</a>';
-            
-        } else {
-            // connect form
-            $form = '<form action="'.admin_url('admin-ajax.php').'" method="post" id="mts_connect_form">';
-            $form .= '<input type="hidden" name="action" value="mts_connect" />';
-            $form .= '<p class="description">'.__('Enter your MyThemeShop username or the email address you registered with and your password to get instant updates for all your MyThemeShop products.', 'mythemeshop-connect').'</p>';
-            $form .= '<label>'.__('MyThemeShop Username', 'mythemeshop-connect').'</label>';
-            $form .= '<input type="text" val="" name="username" id="mts_username" />';
-            $form .= '<label>'.__('Password', 'mythemeshop-connect').'</label>';
-            $form .= '<input type="password" val="" name="password" id="mts_password" />';
-            
-            $form .= '<input type="submit" class="button button-primary" value="'.__('Connect', 'mythemeshop-connect').'" />';
-            
-            $form .= '</form>';
-            
-            echo $form;
-            
-        }
-
-        echo '</div>'; // #mtsc-tab-connect
-        
-        echo '<div id="mtsc-tab-settings">';
-            // settings form
-            $form = '<form action="'.admin_url('admin-ajax.php').'" method="post" id="mts_connect_form">';
-            $form .= '<input type="hidden" name="action" value="mts_connect" />';
-            $form .= '<p>'.__('Enter your MyThemeShop email/username and password to get instant updates for all your MyThemeShop products.', 'mythemeshop-connect').'</p>';
-            $form .= '<label>'.__('Email address or Username', 'mythemeshop-connect').'</label>';
-            $form .= '<input type="text" val="" name="username" id="mts_username" />';
-            $form .= '<label>'.__('Password', 'mythemeshop-connect').'</label>';
-            $form .= '<input type="password" val="" name="password" id="mts_password" />';
-            
-            $form .= '<input type="submit" class="button button-primary" value="'.__('Connect', 'mythemeshop-connect').'" />';
-            
-            $form .= '</form>';
-        echo '</div>'; // #mtsc-tab-settings
-        
-        echo '</div>'; // #mtsc-tabs
-        echo '</div>'; // .mts_connect_ui_content
-        echo '</div>'; // .mts_connect_ui
-        */
-
         $updates_required = false;
         $theme_updates_required = false;
         $plugin_updates_required = false;

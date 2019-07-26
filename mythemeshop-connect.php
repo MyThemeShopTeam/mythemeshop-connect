@@ -1,9 +1,9 @@
 <?php
 /*
- * Plugin Name: MyThemeShop Connect
+ * Plugin Name: MyThemeShop Theme & Plugin Updater
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard.
- * Version: 2.0.16
+ * Version: 2.0.17
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -12,7 +12,7 @@
 defined('ABSPATH') or die;
 
 class mts_connection {
-    const PLUGIN_VERSION = '2.0.16';
+    const PLUGIN_VERSION = '2.0.17';
     private $api_url = "https://mythemeshop.com/mtsapi/v1/";
     
     private $settings_option = "mts_connect_settings";
@@ -303,7 +303,7 @@ class mts_connection {
         }
 
         // Add the new admin menu and page and save the returned hook suffix    
-        $this->menu_hook_suffix = add_menu_page('MyThemeShop Connect', 'MyThemeShop', $admin_page_role, 'mts-connect', array( $this, 'show_ui' ), 'dashicons-update', 66 );
+        $this->menu_hook_suffix = add_menu_page('MyThemeShop Theme & Plugin Updater', 'MyThemeShop', $admin_page_role, 'mts-connect', array( $this, 'show_ui' ), 'dashicons-update', 66 );
         // Use the hook suffix to compose the hook and register an action executed when plugin's options page is loaded
         add_action( 'load-' . $this->menu_hook_suffix , array( $this, 'ui_onload' ) );
     

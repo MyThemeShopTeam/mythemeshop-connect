@@ -1,3 +1,8 @@
+2.0.17 (Jul 26, 2019)
+-----------------------------
+- Changed plugin name to MyThemeShop Theme & Plugin Updater
+
+
 2.0.16 (Jul 2, 2019)
 -----------------------------
 - Added new filters for developers to exclude products from the update process

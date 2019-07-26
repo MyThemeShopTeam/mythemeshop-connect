@@ -1,5 +1,5 @@
 /*
- * Plugin: MyThemeShop Connect
+ * Plugin: MyThemeShop Theme & Plugin Updater
  * Plugin URI: http://www.mythemeshop.com
  * Description: Update MyThemeShop themes & plugins, get news & exclusive offers right from your WordPress dashboard
  * Author: MyThemeShop

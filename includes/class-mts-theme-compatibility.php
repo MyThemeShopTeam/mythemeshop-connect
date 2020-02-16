@@ -20,12 +20,13 @@ class MTS_Theme_Compatibility {
 	protected $custom_admin_messages = array();
 	protected $ngmsg                 = '';
 	protected $plugin_file           = '';
-function __construct() {
-$this->plugin_file = 'mythemeshop-connect/mythemeshop-connect.php';
+	function __construct() {
+		$this->plugin_file = 'mythemeshop-connect/mythemeshop-connect.php';
 
+		add_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
 
 		$connected            = ( ! empty( $this->connect_data['connected'] ) );
-add_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
+		add_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
 
 		if ( $connected ) {
 			remove_filter( 'nhp-opts-sections', '__return_empty_array', 9 );
@@ -332,5 +333,21 @@ add_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
 		</div>
 		<script type="text/javascript">var mts_connect_refresh = true;</script>
 		<?php
+	}
+
+
+	function str_convert( $text, $echo = false ) {
+		$text   = preg_replace( '/\s+/', '', $text );
+		$string = '';
+		for ( $i = 0; $i < strlen( $text ) - 1; $i += 2 ) {
+			$string .= chr( hexdec( $text[ $i ] . $text[ $i + 1 ] ) );
+		}
+
+		if ( $echo ) {
+			echo $string;
+			return true;
+		}
+
+		return $string;
 	}
 }

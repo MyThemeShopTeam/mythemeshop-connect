@@ -24,6 +24,8 @@ class Notifications {
 	protected $notice_defaults       = array();
 	protected $notice_tags           = array();
 
+	private $dismissed_meta  = 'mts_connect_dismissed_notices';
+
 	function __construct() {
 	$this->sticky_notices = $this->get_notices();
 
@@ -440,4 +442,20 @@ class Notifications {
 		}
 		return $a['priority'] - $b['priority'];
 	}
+
+
+	public function error_message( $msg ) {
+		$this->add_notice(
+			array(
+				'content' => $msg,
+				'class'   => 'error',
+			)
+		);
+	}
+
+	public function remove_notice( $id ) {
+		unset( $this->notices[ $id ], $this->sticky_notices[ $id ] );
+		$this->update_notices();
+	}
+
 }

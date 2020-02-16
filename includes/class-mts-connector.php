@@ -1,6 +1,7 @@
 <?php
 /**
- * Deprecated class. Defined only for backwards-compatibility.
+ * Deprecated class. Defined only for backwards-compatibility, some MTS
+ * products are checking if ( is_class( 'MTS_Connector' ) ).
  *
  * @since      2.0
  * @package    MyThemeShop_Connect

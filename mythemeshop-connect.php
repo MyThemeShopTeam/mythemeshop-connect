@@ -13,6 +13,9 @@ use MyThemeShop_Connect\Core;
 
 defined( 'ABSPATH' ) || die;
 
+/* Sets the plugin version constant. */
+define( 'MTS_CONNECT_VERSION', '3.0' );
+
 /* Sets the path to the plugin directory. */
 define( 'MTS_CONNECT_DIR', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 
@@ -20,16 +23,16 @@ define( 'MTS_CONNECT_DIR', trailingslashit( plugin_dir_path( __FILE__ ) ) );
 define( 'MTS_CONNECT_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
 
 /* Sets the path to the `includes` directory. */
-define( 'MTS_CONNECT_INCLUDES', WP_REVIEW_DIR . trailingslashit( 'includes' ) );
+define( 'MTS_CONNECT_INCLUDES', MTS_CONNECT_DIR . trailingslashit( 'includes' ) );
 
 /* Sets the path to the `assets` directory. */
-define( 'MTS_CONNECT_ASSETS', WP_REVIEW_URI . 'public/' );
+define( 'MTS_CONNECT_ASSETS', MTS_CONNECT_URI . 'public/' );
 
 /* We're here. */
 define( 'MTS_CONNECT_ACTIVE', true );
 
 /* Require main class */
-requre_once( MTS_CONNECT_INCLUDES . 'class-core.php' );
+require_once MTS_CONNECT_INCLUDES . 'class-core.php';
 
 /* Run plugin */
 $mts_connection = new Core();

@@ -16,20 +16,20 @@ defined( 'ABSPATH' ) || exit;
  */
 class Notifications {
 
-	private $notices_option  = 'mts_connect_notices';
+	private $notices_option = 'mts_connect_notices';
 
-	protected $notices               = array();
-	protected $sticky_notices        = array();
+	protected $notices        = array();
+	protected $sticky_notices = array();
 
-	protected $notice_defaults       = array();
-	protected $notice_tags           = array();
+	protected $notice_defaults = array();
+	protected $notice_tags     = array();
 
-	private $dismissed_meta  = 'mts_connect_dismissed_notices';
+	private $dismissed_meta = 'mts_connect_dismissed_notices';
 
 	function __construct() {
-	$this->sticky_notices = $this->get_notices();
+		$this->sticky_notices = $this->get_notices();
 
-	// Notices default options
+		// Notices default options
 		$this->notice_defaults = array(
 			'content'  => '',
 			'class'    => 'updated',
@@ -39,7 +39,6 @@ class Notifications {
 			'expire'   => time() + 7 * DAY_IN_SECONDS,
 			'context'  => array(),
 		);
-
 
 		// show notices
 		if ( is_multisite() ) {

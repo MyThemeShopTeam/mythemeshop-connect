@@ -18,7 +18,6 @@ class Plugin_Checker {
 
 	function __construct() {
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_plugin_updates' ) );
-
 	}
 
 	function update_plugins_now() {

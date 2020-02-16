@@ -25,7 +25,7 @@ class MTS_Theme_Compatibility {
 
 		add_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
 
-		$connected            = ( ! empty( $this->connect_data['connected'] ) );
+		$connected = ( ! empty( $this->connect_data['connected'] ) );
 		add_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
 
 		if ( $connected ) {

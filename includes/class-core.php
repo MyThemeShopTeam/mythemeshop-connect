@@ -17,15 +17,15 @@ defined( 'ABSPATH' ) || exit;
  * Main plugin class.
  */
 class Core {
-	private $api_url     = 'https://mtssta-5756.bolt72.servebolt.com/mtsapi/v1/';
+	private $api_url = 'https://mtssta-5756.bolt72.servebolt.com/mtsapi/v1/';
 
 	private $settings_option = 'mts_connect_settings';
 	private $data_option     = 'mts_connect_data';
 	private $invisible_mode  = false;
 
-	protected $connect_data          = array();
-	protected $settings              = array();
-	protected $default_settings      = array(
+	protected $connect_data     = array();
+	protected $settings         = array();
+	protected $default_settings = array(
 		'network_notices' => '1',
 		'update_notices'  => '1',
 		'ui_access_type'  => 'role',
@@ -36,8 +36,8 @@ class Core {
 
 	function __construct() {
 
-		$this->connect_data   = $this->get_data();
-		$this->settings       = $this->get_settings();
+		$this->connect_data = $this->get_data();
+		$this->settings     = $this->get_settings();
 
 		$connected            = ( ! empty( $this->connect_data['connected'] ) );
 		$this->invisible_mode = $this->is_free_plan();
@@ -76,7 +76,7 @@ class Core {
 
 		add_action( 'after_plugin_row_' . $this->plugin_file, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 
-		}
+	}
 
 	public function plugin_activated() {
 		 $this->update_themes_now();
@@ -410,9 +410,9 @@ class Core {
 						<br>
 						<b><?php _e( 'Automatic update is not available for this plugin.', 'mythemeshop-connect' ); ?></b>
 									<?php
-										if ( isset( $plugin_data['reason'] ) ) {
-											printf( __( 'Reason: %s' ), $this->reason_string( $plugin_data['reason'] ) ); }
-										?>
+									if ( isset( $plugin_data['reason'] ) ) {
+										printf( __( 'Reason: %s' ), $this->reason_string( $plugin_data['reason'] ) ); }
+									?>
 						<br>
 						</p>
 					</td>
@@ -457,9 +457,9 @@ class Core {
 						<br>
 						<b><?php _e( 'Automatic update is not available for this theme.', 'mythemeshop-connect' ); ?></b>
 									<?php
-										if ( isset( $theme_data['reason'] ) ) {
-											printf( __( 'Reason: %s' ), $this->reason_string( $theme_data['reason'] ) ); }
-										?>
+									if ( isset( $theme_data['reason'] ) ) {
+										printf( __( 'Reason: %s' ), $this->reason_string( $theme_data['reason'] ) ); }
+									?>
 						<br>
 						</p>
 					</td>

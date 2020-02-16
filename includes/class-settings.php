@@ -28,7 +28,6 @@ class Settings {
 			add_action( 'admin_menu', array( $this, 'admin_menu' ) );
 		}
 
-
 	}
 
 	function admin_menu() {

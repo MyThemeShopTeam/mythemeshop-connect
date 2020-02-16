@@ -1,5 +1,5 @@
 <?php
-/*
+/**
  * Plugin Name: ⟳ MyThemeShop Theme & Plugin Updater
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins right from your WordPress dashboard.

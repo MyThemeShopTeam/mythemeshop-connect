@@ -15,7 +15,9 @@ defined( 'ABSPATH' ) || exit;
  * Connector class.
  */
 class Connector {
-	function connect() {
+	private $api_url = 'https://mtssta-5756.bolt72.servebolt.com/mtsapi/v1/';
+
+	public function connect() {
 		header( 'Content-type: application/json' );
 		$username = isset( $_POST['username'] ) ? $_POST['username'] : '';
 		$password = isset( $_POST['password'] ) ? $_POST['password'] : '';
@@ -64,7 +66,7 @@ class Connector {
 		exit;
 	}
 
-	function disconnect() {
+	public function disconnect() {
 		$this->connect_data['username']  = '';
 		$this->connect_data['api_key']   = '';
 		$this->connect_data['connected'] = false;
@@ -94,5 +96,54 @@ class Connector {
 			set_site_transient( 'update_plugins', $transient );
 		}
 		$this->reset_notices();
+	}
+
+
+	public function ajax_mts_connect() {
+		header( 'Content-type: application/json' );
+		$username = isset( $_POST['username'] ) ? $_POST['username'] : '';
+		$password = isset( $_POST['password'] ) ? $_POST['password'] : '';
+
+		$response = wp_remote_post(
+			$this->api_url . 'get_key',
+			array(
+				'body'    => array(
+					'user' => $username,
+					'pass' => $password,
+				),
+				'timeout' => 10,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+			echo json_encode(
+				array(
+					'status' => 'fail',
+					'errors' => array( $error_message ),
+				)
+			);
+		} else {
+			echo $response['body']; // should be JSON already
+
+			$data = json_decode( $response['body'], true );
+			if ( isset( $data['login'] ) ) {
+				$this->reset_notices();
+				$this->connect_data['username']  = $data['login'];
+				$this->connect_data['api_key']   = $data['key'];
+				$this->connect_data['connected'] = true;
+				$this->update_data();
+			}
+			// notices
+			if ( isset( $data['notices'] ) && is_array( $data['notices'] ) ) {
+				foreach ( $data['notices'] as $notice ) {
+					if ( ! empty( $notice['network_notice'] ) ) {
+						$this->add_network_notice( (array) $notice );
+					} else {
+						$this->add_sticky_notice( (array) $notice );
+					}
+				}
+			}
+		}
 	}
 }

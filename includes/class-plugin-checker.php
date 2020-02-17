@@ -16,11 +16,11 @@ defined( 'ABSPATH' ) || exit;
  */
 class Plugin_Checker {
 
-	function __construct() {
+	public function __construct() {
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_plugin_updates' ) );
 	}
 
-	function update_plugins_now() {
+	public function update_plugins_now() {
 		if ( $transient = get_site_transient( 'update_plugins' ) ) {
 			delete_site_transient( 'mts_update_plugins' );
 			delete_site_transient( 'mts_update_plugins_no_access' );
@@ -29,7 +29,7 @@ class Plugin_Checker {
 	}
 
 
-	function check_plugin_updates( $update_transient ) {
+	public function check_plugin_updates( $update_transient ) {
 		global $wp_version;
 
 		if ( ! isset( $update_transient->checked ) ) {

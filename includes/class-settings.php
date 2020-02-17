@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Settings {
 
-	function __construct() {
+	public function __construct() {
 
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
@@ -30,7 +30,7 @@ class Settings {
 
 	}
 
-	function admin_menu() {
+	public function admin_menu() {
 		global $current_user;
 		$user_id = $current_user->ID;
 
@@ -60,10 +60,10 @@ class Settings {
 	}
 
 
-	function admin_init() {
+	public function admin_init() {
 		$connected = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
 
-		$updates_available = $this->new_updates_available();
+		$updates_available = $this->has_new_updates();
 
 		$current_user = wp_get_current_user();
 		// Tags to use in notifications
@@ -87,7 +87,7 @@ class Settings {
 		}
 	}
 
-	function admin_enqueue_scripts( $hook_suffix ) {
+	public function admin_enqueue_scripts( $hook_suffix ) {
 		wp_register_script( 'mts-connect', plugins_url( '/js/admin.js', __FILE__ ), array( 'jquery' ), $this->plugin_get_version() );
 		wp_register_script( 'mts-connect-form', plugins_url( '/js/connect.js', __FILE__ ), array( 'jquery' ), $this->plugin_get_version() );
 		wp_register_style( 'mts-connect', plugins_url( '/css/admin.css', __FILE__ ), array(), $this->plugin_get_version() );
@@ -95,7 +95,7 @@ class Settings {
 
 		$connected = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
 
-		$updates_available  = $this->new_updates_available();
+		$updates_available  = $this->has_new_updates();
 		$using_mts_products = ( $this->mts_plugins_in_use || $this->mts_theme_in_use );
 		$icon_class_attr    = 'disconnected';
 		if ( $connected ) {
@@ -139,7 +139,7 @@ class Settings {
 	}
 
 
-	function ui_onload() {
+	public function ui_onload() {
 		if ( isset( $_GET['disconnect'] ) && $_GET['disconnect'] == 1 ) {
 			$this->disconnect();
 			$this->add_notice(
@@ -189,11 +189,11 @@ class Settings {
 		$themes_noaccess_transient  = get_site_transient( 'mts_update_themes_no_access' );
 		$plugins_noaccess_transient = get_site_transient( 'mts_update_plugins_no_access' );
 
-		$available_theme_updates   = $this->new_updates_available( $themes_transient );
-		$available_plugins_updates = $this->new_updates_available( $plugins_transient );
+		$available_theme_updates   = $this->has_new_updates( $themes_transient );
+		$available_plugins_updates = $this->has_new_updates( $plugins_transient );
 
-		$inaccessible_theme_updates   = $this->new_updates_available( $themes_noaccess_transient );
-		$inaccessible_plugins_updates = $this->new_updates_available( $plugins_noaccess_transient );
+		$inaccessible_theme_updates   = $this->has_new_updates( $themes_noaccess_transient );
+		$inaccessible_plugins_updates = $this->has_new_updates( $plugins_noaccess_transient );
 
 		if ( $available_theme_updates || $available_plugins_updates || $inaccessible_theme_updates || $inaccessible_plugins_updates ) {
 			$updates_required = true;
@@ -310,7 +310,7 @@ class Settings {
 
 	}
 
-	function connect_form_html( $id = 'mts_connect_form' ) {
+	public function connect_form_html( $id = 'mts_connect_form' ) {
 		?>
 		<form action="<?php echo admin_url( 'admin-ajax.php' ); ?>" method="post" id="<?php echo esc_attr( $id ); ?>">
 			<input type="hidden" name="action" value="mts_connect">
@@ -333,7 +333,7 @@ class Settings {
 		<?php
 	}
 
-	function logo_html() {
+	public function logo_html() {
 		?>
 			<img src="<?php echo plugins_url( 'img/mythemeshop-logo.png', __FILE__ ); ?>" id="mts_connect_logo">
 		<?php

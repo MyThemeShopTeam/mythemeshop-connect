@@ -26,7 +26,7 @@ class Notifications {
 
 	private $dismissed_meta = 'mts_connect_dismissed_notices';
 
-	function __construct() {
+	public function __construct() {
 		$this->sticky_notices = $this->get_notices();
 
 		// Notices default options
@@ -55,7 +55,7 @@ class Notifications {
 
 	}
 
-	function ajax_mts_connect_dismiss_notices() {
+	public function ajax_mts_connect_dismiss_notices() {
 		if ( ! empty( $_POST['ids'] ) && is_array( $_POST['ids'] ) ) {
 			foreach ( $_POST['ids'] as $id ) {
 				$this->dismiss_notice( $id );
@@ -64,13 +64,13 @@ class Notifications {
 		exit;
 	}
 
-	function ajax_mts_connect_reset_notices() {
+	public function ajax_mts_connect_reset_notices() {
 		$this->reset_notices();
 
 		exit;
 	}
 
-	function reset_notices() {
+	public function reset_notices() {
 		$notices = $this->notices + $this->sticky_notices;
 		foreach ( $notices as $id => $notice ) {
 			$this->remove_notice( $id );
@@ -78,7 +78,7 @@ class Notifications {
 		}
 	}
 
-	function get_notices() {
+	public function get_notices() {
 		$notices = get_site_option( $this->notices_option );
 		if ( empty( $notices ) ) {
 			$notices = array();

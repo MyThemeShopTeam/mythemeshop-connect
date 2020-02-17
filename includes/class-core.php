@@ -17,14 +17,47 @@ defined( 'ABSPATH' ) || exit;
  * Main plugin class.
  */
 class Core {
-	private $api_url = 'https://mtssta-5756.bolt72.servebolt.com/mtsapi/v1/';
 
+	/**
+	 * Settings option name.
+	 *
+	 * @var string
+	 */
 	private $settings_option = 'mts_connect_settings';
-	private $data_option     = 'mts_connect_data';
-	private $invisible_mode  = false;
 
-	protected $connect_data     = array();
-	protected $settings         = array();
+	/**
+	 * Connect data option name.
+	 *
+	 * @var string
+	 */
+	private $data_option = 'mts_connect_data';
+
+	/**
+	 * No-UI invisible mode is enabled by default for free products.
+	 *
+	 * @var boolean
+	 */
+	private $invisible_mode = false;
+
+	/**
+	 * Connect data.
+	 *
+	 * @var array
+	 */
+	protected $connect_data = array();
+
+	/**
+	 * Settings array.
+	 *
+	 * @var array
+	 */
+	protected $settings = array();
+
+	/**
+	 * Default settings.
+	 *
+	 * @var array
+	 */
 	protected $default_settings = array(
 		'network_notices' => '1',
 		'update_notices'  => '1',
@@ -33,38 +66,30 @@ class Core {
 		'ui_access_user'  => '',
 	);
 
+	/**
+	 * Constructor.
+	 */
+	public function __construct() {
 
-	function __construct() {
-
-		$this->connect_data = $this->get_data();
-		$this->settings     = $this->get_settings();
-
-		$connected            = ( ! empty( $this->connect_data['connected'] ) );
+		$this->connect_data   = $this->get_data();
+		$this->settings       = $this->get_settings();
 		$this->invisible_mode = $this->is_free_plan();
+		$connected            = ( ! empty( $this->connect_data['connected'] ) );
 
 		add_action( 'init', array( $this, 'init' ) );
-		// add_action( 'admin_print_scripts', array($this, 'admin_inline_js'));
-		add_action( 'load-themes.php', array( $this, 'force_check' ), 9 );
-		add_action( 'load-plugins.php', array( $this, 'force_check' ), 9 );
-		add_action( 'load-update-core.php', array( $this, 'force_check' ), 9 );
+		add_action( 'load-themes.php', array( $this, 'maybe_force_check' ), 9 );
+		add_action( 'load-plugins.php', array( $this, 'maybe_force_check' ), 9 );
+		add_action( 'load-update-core.php', array( $this, 'maybe_force_check' ), 9 );
 
-		add_action( 'wp_ajax_mts_connect', array( $this, 'ajax_mts_connect' ) );
-		add_action( 'wp_ajax_mts_connect_update_settings', array( $this, 'ajax_update_settings' ) );
-		add_action( 'wp_ajax_mts_connect_dismiss_notice', array( $this, 'ajax_mts_connect_dismiss_notices' ) );
-		add_action( 'wp_ajax_mts_connect_check_themes', array( $this, 'ajax_mts_connect_check_themes' ) );
-		add_action( 'wp_ajax_mts_connect_check_plugins', array( $this, 'ajax_mts_connect_check_plugins' ) );
-		add_action( 'wp_ajax_mts_connect_reset_notices', array( $this, 'ajax_mts_connect_reset_notices' ) );
-
-		// Fix false wordpress.org update notifications
+		// Fix false wordpress.org update notifications.
 		add_filter( 'pre_set_site_transient_update_themes', array( $this, 'fix_false_wp_org_theme_update_notification' ) );
-		// add_filter( 'pre_set_site_transient_update_plugins', array($this,'fix_false_wp_org_plugin_update_notification') );
 		register_activation_hook( __FILE__, array( $this, 'plugin_activated' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'plugin_deactivated' ) );
 
-		// localization
+		// Localization.
 		add_action( 'plugins_loaded', array( $this, 'mythemeshop_connect_load_textdomain' ) );
 
-		// Override plugin info page with changelog
+		// Override plugin info page with changelog.
 		add_action( 'install_plugins_pre_plugin-information', array( $this, 'install_plugin_information' ) );
 
 		add_action( 'load-plugins.php', array( $this, 'brand_updates_table' ), 21 );
@@ -78,129 +103,38 @@ class Core {
 
 	}
 
-	public function plugin_activated() {
-		 $this->update_themes_now();
-		 $this->update_plugins_now();
+	/**
+	 * Localization.
+	 *
+	 * @return void
+	 */
+	public function mythemeshop_connect_load_textdomain() {
+		load_plugin_textdomain( 'mythemeshop-connect', false, dirname( plugin_basename( __FILE__ ) ) . '/language/' );
 	}
 
+	/**
+	 * Hook after plugin activation.
+	 *
+	 * @return void
+	 */
+	public function plugin_activated() {
+		$this->update_themes_now();
+		$this->update_plugins_now();
+	}
+
+	/**
+	 * Hook after plugin deactivation.
+	 *
+	 * @return void
+	 */
 	public function plugin_deactivated() {
-		$this->reset_notices(); // todo: reset for all admins
+		$this->reset_notices(); // Todo: reset for all admins.
 		$this->disconnect();
 		do_action( 'mts_connect_deactivate' );
 	}
 
-	function mythemeshop_connect_load_textdomain() {
-		load_plugin_textdomain( 'mythemeshop-connect', false, dirname( plugin_basename( __FILE__ ) ) . '/language/' );
-	}
 
-
-	function ajax_mts_connect_check_themes() {
-		$this->update_themes_now();
-		$transient = get_site_transient( 'mts_update_themes' );
-		if ( is_object( $transient ) && isset( $transient->response ) ) {
-			echo count( $transient->response );
-		} else {
-			echo '0';
-		}
-
-		exit;
-	}
-
-
-	function ajax_mts_connect_check_plugins() {
-		$this->update_plugins_now();
-		$transient = get_site_transient( 'mts_update_plugins' );
-		if ( is_object( $transient ) && isset( $transient->response ) ) {
-			echo count( $transient->response );
-		} else {
-			echo '0';
-		}
-
-		exit;
-	}
-	function ajax_mts_connect() {
-		header( 'Content-type: application/json' );
-		$username = isset( $_POST['username'] ) ? $_POST['username'] : '';
-		$password = isset( $_POST['password'] ) ? $_POST['password'] : '';
-
-		$response = wp_remote_post(
-			$this->api_url . 'get_key',
-			array(
-				'body'    => array(
-					'user' => $username,
-					'pass' => $password,
-				),
-				'timeout' => 10,
-			)
-		);
-
-		if ( is_wp_error( $response ) ) {
-			$error_message = $response->get_error_message();
-			echo json_encode(
-				array(
-					'status' => 'fail',
-					'errors' => array( $error_message ),
-				)
-			);
-		} else {
-			echo $response['body']; // should be JSON already
-
-			$data = json_decode( $response['body'], true );
-			if ( isset( $data['login'] ) ) {
-				$this->reset_notices();
-				$this->connect_data['username']  = $data['login'];
-				$this->connect_data['api_key']   = $data['key'];
-				$this->connect_data['connected'] = true;
-				$this->update_data();
-			}
-			// notices
-			if ( isset( $data['notices'] ) && is_array( $data['notices'] ) ) {
-				foreach ( $data['notices'] as $notice ) {
-					if ( ! empty( $notice['network_notice'] ) ) {
-						$this->add_network_notice( (array) $notice );
-					} else {
-						$this->add_sticky_notice( (array) $notice );
-					}
-				}
-			}
-		}
-		exit;
-	}
-
-	function disconnect() {
-		$this->connect_data['username']  = '';
-		$this->connect_data['api_key']   = '';
-		$this->connect_data['connected'] = false;
-		$this->update_data();
-
-		// remove theme updates for mts themes in transient by searching through 'packages' properties for 'mythemeshop'
-		$transient = get_site_transient( 'update_themes' );
-		delete_site_transient( 'mts_update_themes' );
-		delete_site_transient( 'mts_update_themes_no_access' );
-		if ( $transient && ! empty( $transient->response ) ) {
-			foreach ( $transient->response as $theme => $data ) {
-				if ( strstr( $data['package'], 'mythemeshop' ) !== false ) {
-					unset( $transient->response[ $theme ] );
-				}
-			}
-			set_site_transient( 'update_themes', $transient );
-		}
-		$transient = get_site_transient( 'update_plugins' );
-		delete_site_transient( 'mts_update_plugins' );
-		delete_site_transient( 'mts_update_plugins_no_access' );
-		if ( $transient && ! empty( $transient->response ) ) {
-			foreach ( $transient->response as $plugin => $data ) {
-				if ( strstr( $data->package, 'mythemeshop' ) !== false ) {
-					unset( $transient->response[ $plugin ] );
-				}
-			}
-			set_site_transient( 'update_plugins', $transient );
-		}
-		$this->reset_notices();
-	}
-
-
-	function force_check() {
+	public function maybe_force_check() {
 		if ( isset( $_GET['force-check'] ) && $_GET['force-check'] == 1 ) {
 			$screen = get_current_screen();
 			switch ( $screen->id ) {
@@ -223,15 +157,11 @@ class Core {
 		}
 	}
 
-	function plugin_get_version() {
-		return MTS_CONNECT_VERSION;
-	}
-
-	function needs_check_now( $updates_data ) {
+	public function needs_check_now( $updates_data ) {
 		return apply_filters( 'mts_connect_needs_check', true, $updates_data );
 	}
 
-	function new_updates_available( $transient = null ) {
+	public function has_new_updates( $transient = null ) {
 		if ( ! $transient ) {
 			$updates_available = false;
 			$transient         = get_site_transient( 'mts_update_plugins' );
@@ -258,18 +188,18 @@ class Core {
 		return 0;
 	}
 
-	function is_connected() {
+	public function is_connected() {
 		return ( ! empty( $this->connect_data['connected'] ) );
 	}
 
-	function get_data() {
+	public function get_data() {
 		$options = get_site_option( $this->data_option );
 		if ( empty( $options ) ) {
 			$options = array( 'connected' => false );
 		}
 		return $options;
 	}
-	function get_settings() {
+	public function get_settings() {
 		$settings = get_site_option( $this->settings_option );
 
 		if ( empty( $settings ) ) {
@@ -291,7 +221,7 @@ class Core {
 		return $settings;
 	}
 
-	function set_settings( $new_settings ) {
+	public function set_settings( $new_settings ) {
 		foreach ( $this->default_settings as $setting_key => $setting_value ) {
 			if ( isset( $new_settings[ $setting_key ] ) ) {
 				$this->settings[ $setting_key ] = $new_settings[ $setting_key ];
@@ -299,12 +229,6 @@ class Core {
 		}
 	}
 
-	function ajax_update_settings() {
-		$this->set_settings( $_POST );
-		$this->update_settings();
-
-		exit;
-	}
 
 	protected function update_data() {
 		update_site_option( $this->data_option, $this->connect_data );
@@ -349,7 +273,7 @@ class Core {
 		return $val;
 	}
 
-	function install_plugin_information() {
+	public function install_plugin_information() {
 		if ( empty( $_REQUEST['plugin'] ) ) {
 			return;
 		}
@@ -375,7 +299,7 @@ class Core {
 		}
 	}
 
-	function brand_updates_page() {
+	public function brand_updates_page() {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return;
 		}
@@ -473,7 +397,7 @@ class Core {
 
 	}
 
-	function reason_string( $reason ) {
+	public function reason_string( $reason ) {
 		switch ( $reason ) {
 			case 'subscription_expired':
 				return __( 'Subscription expired', 'mythemeshop-connect' );
@@ -487,7 +411,7 @@ class Core {
 		return $reason;
 	}
 
-	function brand_updates_table() {
+	public function brand_updates_table() {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return;
 		}
@@ -507,7 +431,7 @@ class Core {
 		}
 	}
 
-	function brand_updates_plugin_row( $file, $plugin_data, $status ) {
+	public function brand_updates_plugin_row( $file, $plugin_data, $status ) {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return;
 		}
@@ -559,7 +483,7 @@ class Core {
 		<?php
 	}
 
-	function updates_table_custom_js() {
+	public function updates_table_custom_js() {
 		?>
 		<script type="text/javascript">
 			document.addEventListener("DOMContentLoaded", function(event) {
@@ -607,7 +531,7 @@ class Core {
 		<?php
 	}
 
-	function brand_theme_updates( $themes ) {
+	public function brand_theme_updates( $themes ) {
 
 		$html = '<p><strong>' . __( 'There is a new version of %1$s available. <a href="%2$s" %3$s>View version %4$s details</a>. <em>Automatic update is unavailable for this theme.</em>' ) . '</strong></p>';
 
@@ -641,7 +565,7 @@ class Core {
 		return $themes;
 	}
 
-	function plugin_row_deactivate_notice( $file, $plugin_data ) {
+	public function plugin_row_deactivate_notice( $file, $plugin_data ) {
 		if ( is_multisite() && ! is_network_admin() && is_plugin_active_for_network( $file ) ) {
 			return;
 		}

@@ -20,7 +20,7 @@ class MTS_Theme_Compatibility {
 	protected $custom_admin_messages = array();
 	protected $ngmsg                 = '';
 	protected $plugin_file           = '';
-	function __construct() {
+	public function __construct() {
 		$this->plugin_file = 'mythemeshop-connect/mythemeshop-connect.php';
 
 		add_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
@@ -63,18 +63,18 @@ class MTS_Theme_Compatibility {
 		}
 	}
 
-	function init() {
+	public function init() {
 		define( 'MTS_THEME_T', 'mts' . 'the' );
 	}
 
-	function after_theme() {
+	public function after_theme() {
 		add_action( 'admin_menu', array( $this, 'remove_themeupdates_page' ) );
 	}
-	function remove_themeupdates_page() {
+	public function remove_themeupdates_page() {
 		remove_submenu_page( 'index.php', 'mythemeshop-updates' );
 	}
 
-	function check_for_mts_plugins() {
+	public function check_for_mts_plugins() {
 		if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
@@ -106,7 +106,7 @@ class MTS_Theme_Compatibility {
 
 	}
 
-	function check_for_mts_theme() {
+	public function check_for_mts_theme() {
 		// Check for mts_theme once.
 		if ( ( $stored = get_option( 'mts_theme_active', false ) ) !== false ) {
 			$this->mts_theme_in_use = ( $stored === '1' );
@@ -135,17 +135,17 @@ class MTS_Theme_Compatibility {
 		return;
 	}
 
-	function clear_theme_check() {
+	public function clear_theme_check() {
 		delete_option( 'mts_theme_active' );
 	}
 
 
-	function add_overlay() {
+	public function add_overlay() {
 		add_thickbox();
 		add_action( 'admin_footer', array( $this, 'show_overlay' ), 10, 1 );
 	}
 
-	function show_overlay() {
+	public function show_overlay() {
 		?>
 		<div
 		<?php
@@ -167,7 +167,7 @@ class MTS_Theme_Compatibility {
 	}
 
 
-	function add_reminder() {
+	public function add_reminder() {
 		$exclude_pages = array( 'toplevel_page_mts-connect', 'toplevel_page_mts-connect-network', 'toplevel_page_mts-install-plugins' );
 		$connected     = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
 
@@ -202,7 +202,7 @@ class MTS_Theme_Compatibility {
 		require_once MTS_CONNECT_INCLUDES . 'class-mts_connector.php';
 	}
 
-	function nhp_opts( $opts ) {
+	public function nhp_opts( $opts ) {
 		$opts['show_import_export']    = false;
 		$opts['show_typography']       = false;
 		$opts['show_translate']        = false;
@@ -212,7 +212,7 @@ class MTS_Theme_Compatibility {
 		return $opts;
 	}
 
-	function nhp_sections( $sections ) {
+	public function nhp_sections( $sections ) {
 		$url        = network_admin_url( 'admin.php?page=mts-connect' );
 		$sections[] = array(
 			'icon'   => 'fa fa-cogs',
@@ -232,7 +232,7 @@ class MTS_Theme_Compatibility {
 		return $sections;
 	}
 
-	function replace_admin_pages() {
+	public function replace_admin_pages() {
 		$default_title = __( 'Settings', 'mythemeshop-connect' );
 		/* Translators: 1 is opening tag for link to admin page, 2 is closing tag for the same */
 		$default_message = sprintf( __( 'Plugin settings will appear here after you %1$sconnect with your MyThemeShop account.%2$s', 'mythemeshop-connect' ), '<a href="' . network_admin_url( 'admin.php?page=mts-connect' ) . '">', '</a>' );
@@ -305,7 +305,7 @@ class MTS_Theme_Compatibility {
 		add_action( 'add_meta_boxes', array( $this, 'remove_meta_boxes' ), 99, 2 );
 	}
 
-	function remove_meta_boxes( $post_type, $post ) {
+	public function remove_meta_boxes( $post_type, $post ) {
 		$remove_meta_boxes = array(
 			'wp-review-metabox-review',
 			'wp-review-metabox-item',
@@ -321,7 +321,7 @@ class MTS_Theme_Compatibility {
 		}
 	}
 
-	function replace_settings_page() {
+	public function replace_settings_page() {
 		$hookname = current_filter();
 		$data     = $this->custom_admin_messages[ $hookname ];
 
@@ -336,7 +336,7 @@ class MTS_Theme_Compatibility {
 	}
 
 
-	function str_convert( $text, $echo = false ) {
+	public function str_convert( $text, $echo = false ) {
 		$text   = preg_replace( '/\s+/', '', $text );
 		$string = '';
 		for ( $i = 0; $i < strlen( $text ) - 1; $i += 2 ) {

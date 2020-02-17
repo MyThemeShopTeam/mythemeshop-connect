@@ -16,12 +16,12 @@ defined( 'ABSPATH' ) || exit;
  */
 class Theme_Checker {
 
-	function __construct() {
+	public function __construct() {
 		add_filter( 'pre_set_site_transient_update_themes', array( $this, 'check_theme_updates' ) );
 
 	}
 
-	function update_themes_now() {
+	public function update_themes_now() {
 		if ( $transient = get_site_transient( 'update_themes' ) ) {
 			delete_site_transient( 'mts_update_themes' );
 			delete_site_transient( 'mts_update_themes_no_access' );
@@ -29,7 +29,7 @@ class Theme_Checker {
 		}
 	}
 
-	function check_theme_updates( $update_transient ) {
+	public function check_theme_updates( $update_transient ) {
 		global $wp_version;
 
 		if ( ! isset( $update_transient->checked ) ) {

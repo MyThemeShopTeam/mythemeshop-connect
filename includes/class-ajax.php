@@ -53,8 +53,35 @@ class Ajax {
 	}
 
 	public function connect() {
+		header( 'Content-type: application/json' );
+		$output = array();
+		$output['login'] = true;
+		$output['auth_url'] = Core::get_instance()->auth_url;
+		$output['auth_url'] = add_query_arg( array(
+			'site' => urlencode( site_url() ),
+			'r'    => urlencode( network_admin_url( 'admin.php?page=mts-connect' ) ),
+		), $output['auth_url'] );
 
+		echo wp_json_encode( $output );
 		exit;
+	}
+
+	/**
+	 * Get current page URL.
+	 *
+	 * @param  bool $ignore_qs Ignore query string.
+	 * @return string
+	 */
+	public static function get_current_page_url( $ignore_qs = false ) {
+		$link = '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		$link = ( is_ssl() ? 'https' : 'http' ) . $link;
+
+		if ( $ignore_qs ) {
+			$link = explode( '?', $link );
+			$link = $link[0];
+		}
+
+		return $link;
 	}
 
 	public function update_settings() {

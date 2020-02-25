@@ -19,6 +19,13 @@ defined( 'ABSPATH' ) || exit;
 class Core {
 
 	/**
+	 * Singleton object instance.
+	 *
+	 * @var object
+	 */
+	protected static $instance = null;
+
+	/**
 	 * Settings option name.
 	 *
 	 * @var string
@@ -44,7 +51,7 @@ class Core {
 	 *
 	 * @var array
 	 */
-	protected $connect_data = array();
+	public $connect_data = array();
 
 	/**
 	 * Settings array.
@@ -67,40 +74,110 @@ class Core {
 	);
 
 	/**
+	 * Controller objects.
+	 *
+	 * @var array
+	 */
+	public $controllers = array();
+
+	/**
+	 * Auth URL.
+	 *
+	 * @var array
+	 */
+	public $auth_url = 'https://mtssta-5756.bolt72.servebolt.com/auth/';
+
+	/**
 	 * Constructor.
 	 */
-	public function __construct() {
+	private function __construct() {
+		$files = array(
+			'class-ajax.php',
+			'class-checker.php',
+			'class-compatibility.php',
+			'class-notifications.php',
+			'class-plugin-checker.php',
+			'class-settings.php',
+			'class-theme-checker.php',
+		);
+
+		foreach ( $files as $file ) {
+			require_once MTS_CONNECT_INCLUDES . $file;
+		}
+
+		$this->init_controllers();
 
 		$this->connect_data   = $this->get_data();
 		$this->settings       = $this->get_settings();
-		$this->invisible_mode = $this->is_free_plan();
+		$this->invisible_mode = apply_filters( 'mts_connect_invisible_mode', $this->is_free_plan() );
 		$connected            = ( ! empty( $this->connect_data['connected'] ) );
-
-		add_action( 'init', array( $this, 'init' ) );
 		add_action( 'load-themes.php', array( $this, 'maybe_force_check' ), 9 );
 		add_action( 'load-plugins.php', array( $this, 'maybe_force_check' ), 9 );
 		add_action( 'load-update-core.php', array( $this, 'maybe_force_check' ), 9 );
-
-		// Fix false wordpress.org update notifications.
-		add_filter( 'pre_set_site_transient_update_themes', array( $this, 'fix_false_wp_org_theme_update_notification' ) );
 		register_activation_hook( __FILE__, array( $this, 'plugin_activated' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'plugin_deactivated' ) );
-
 		// Localization.
-		add_action( 'plugins_loaded', array( $this, 'mythemeshop_connect_load_textdomain' ) );
-
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		// Override plugin info page with changelog.
 		add_action( 'install_plugins_pre_plugin-information', array( $this, 'install_plugin_information' ) );
-
 		add_action( 'load-plugins.php', array( $this, 'brand_updates_table' ), 21 );
 		add_action( 'core_upgrade_preamble', array( $this, 'brand_updates_page' ), 21 );
-
 		add_action( 'admin_print_scripts-plugins.php', array( $this, 'updates_table_custom_js' ) );
-
 		add_filter( 'wp_prepare_themes_for_js', array( $this, 'brand_theme_updates' ), 21 );
+		add_action( 'after_plugin_row_' . MTS_CONNECT_PLUGIN_FILE, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
+		add_action( 'admin_init', array( $this, 'handle_connect' ), 10, 2 );
+	}
 
-		add_action( 'after_plugin_row_' . $this->plugin_file, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
+	/**
+	 * Singleton getter.
+	 *
+	 * @return object This object.
+	 */
+	public static function get_instance() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new Core();
+		}
+		return self::$instance;
+	}
 
+	/**
+	 * Init controllers.
+	 *
+	 * @return void
+	 */
+	public function init_controllers() {
+		$this->controllers['ajax']           = new Ajax();
+		$this->controllers['compatibility']  = new Compatibility();
+		$this->controllers['notifications']  = new Notifications();
+		$this->controllers['plugin_checker'] = new Plugin_Checker();
+		$this->controllers['theme_checker']  = new Theme_Checker();
+		$this->controllers['settings']       = new Settings();
+	}
+
+	/**
+	 * Shorthand function to get specific controller object.
+	 *
+	 * @param  string $controller Controller name.
+	 * @return object             Controller object.
+	 */
+	public static function get( $controller ) {
+		if ( isset( self::$instance->controllers[ $controller ] ) ) {
+			return self::$instance->controllers[ $controller ];
+		}
+		return new stdClass();
+	}
+
+	/**
+	 * Shorthand function to get specific setting.
+	 *
+	 * @param  string $setting Setting name.
+	 * @return object          Setting value.
+	 */
+	public static function get_setting( $setting ) {
+		if ( isset( self::$instance->settings[ $setting ] ) ) {
+			return self::$instance->settings[ $setting ];
+		}
+		return '';
 	}
 
 	/**
@@ -108,7 +185,7 @@ class Core {
 	 *
 	 * @return void
 	 */
-	public function mythemeshop_connect_load_textdomain() {
+	public function load_textdomain() {
 		load_plugin_textdomain( 'mythemeshop-connect', false, dirname( plugin_basename( __FILE__ ) ) . '/language/' );
 	}
 
@@ -157,11 +234,7 @@ class Core {
 		}
 	}
 
-	public function needs_check_now( $updates_data ) {
-		return apply_filters( 'mts_connect_needs_check', true, $updates_data );
-	}
-
-	public function has_new_updates( $transient = null ) {
+	public static function has_new_updates( $transient = null ) {
 		if ( ! $transient ) {
 			$updates_available = false;
 			$transient         = get_site_transient( 'mts_update_plugins' );
@@ -188,8 +261,8 @@ class Core {
 		return 0;
 	}
 
-	public function is_connected() {
-		return ( ! empty( $this->connect_data['connected'] ) );
+	public static function is_connected() {
+		return ( ! empty( self::$instance->connect_data['connected'] ) );
 	}
 
 	public function get_data() {
@@ -233,44 +306,9 @@ class Core {
 	protected function update_data() {
 		update_site_option( $this->data_option, $this->connect_data );
 	}
+
 	protected function update_settings() {
 		update_site_option( $this->settings_option, $this->settings );
-	}
-
-	public function fix_false_wp_org_theme_update_notification( $val ) {
-		$allow_update = array( 'point', 'ribbon-lite' );
-		if ( is_object( $val ) && property_exists( $val, 'response' ) && is_array( $val->response ) ) {
-			foreach ( $val->response as $key => $value ) {
-				if ( isset( $value['theme'] ) ) {// added by WordPress
-					if ( in_array( $value['theme'], $allow_update ) ) {
-						continue;
-					}
-					$url       = $value['url'];// maybe wrong url for MyThemeShop theme
-					$theme     = wp_get_theme( $value['theme'] );// real theme object
-					$theme_uri = $theme->get( 'ThemeURI' );// theme url
-					// If it is MyThemeShop theme but wordpress.org have the theme with same name, remove it from update response
-					if ( false !== strpos( $theme_uri, 'mythemeshop.com' ) && false !== strpos( $url, 'wordpress.org' ) ) {
-						unset( $val->response[ $key ] );
-					}
-				}
-			}
-		}
-		return $val;
-	}
-
-	public function fix_false_wp_org_plugin_update_notification( $val ) {
-
-		if ( property_exists( $val, 'response' ) && is_array( $val->response ) ) {
-			foreach ( $val->response as $key => $value ) {
-				$url        = $value->url;
-				$plugin     = get_plugin_data( WP_PLUGIN_DIR . '/' . $key, false, false );
-				$plugin_uri = $plugin['PluginURI'];
-				if ( 0 !== strpos( $plugin_uri, 'mythemeshop.com' && 0 !== strpos( $url, 'wordpress.org' ) ) ) {
-					unset( $val->response[ $key ] );
-				}
-			}
-		}
-		return $val;
 	}
 
 	public function install_plugin_information() {
@@ -316,7 +354,7 @@ class Core {
 				<tr>
 					<td class="plugin-title">
 						<p>
-							<img src="<?php echo plugins_url( 'img/mythemeshop-logo-2.png', __FILE__ ); ?>" width="64" height="64" class="updates-table-screenshot mts-connect-default-plugin-icon" style="float:left;">
+							<img src="<?php echo esc_attr( MTS_CONNECT_ASSETS . 'img/mythemeshop-logo-2.png' ); ?>" width="64" height="64" class="updates-table-screenshot mts-connect-default-plugin-icon" style="float:left;">
 							<strong><?php echo $plugin_data['name']; ?></strong>
 						<?php
 							printf(
@@ -358,7 +396,7 @@ class Core {
 			echo '<tbody class="plugins">';
 			foreach ( $themes_noaccess_transient->response as $theme_slug => $theme_data ) {
 				$theme_obj  = wp_get_theme( $theme_slug );
-				$screenshot = ( ! empty( $theme_obj->screenshot ) ? get_theme_root_uri() . '/' . $theme_slug . '/' . $theme_obj->screenshot : plugins_url( 'img/mythemeshop-logo-2.png', __FILE__ ) );
+				$screenshot = ( ! empty( $theme_obj->screenshot ) ? get_theme_root_uri() . '/' . $theme_slug . '/' . $theme_obj->screenshot : MTS_CONNECT_ASSETS . 'img/mythemeshop-logo-2.png' );
 				?>
 				<tr>
 					<td class="plugin-title">
@@ -511,7 +549,7 @@ class Core {
 						// Create key/value pairs from form data
 						obj[item.name] = item.value;
 						// While we're here, check if Updater is selected
-						if ( ! updater_selected && item.name == 'checked[]' && item.value.indexOf( '<?php echo $this->plugin_file; ?>') !== -1 ) {
+						if ( ! updater_selected && item.name == 'checked[]' && item.value.indexOf( '<?php echo esc_js( MTS_CONNECT_PLUGIN_FILE ); ?>') !== -1 ) {
 							updater_selected = true;
 						}
 						return obj;
@@ -570,7 +608,7 @@ class Core {
 			return;
 		}
 
-		if ( ! $this->mts_plugins_in_use && ! $this->mts_theme_in_use ) {
+		if ( ! self::get( 'compatibility' )->mts_plugins_in_use && ! self::get( 'compatibility' )->mts_theme_in_use ) {
 			return;
 		}
 
@@ -581,5 +619,71 @@ class Core {
 		echo '</p></div></td></tr>';
 	}
 
+	public function is_free_plan() {
+		$themes = wp_get_themes();
+		return true;
+		// print_r($themes);die();
+	}
+
+	public function handle_connect() {
+		if ( isset( $_GET['mythemeshop_connect'] ) ) {
+			switch ( $_GET['mythemeshop_connect'] ) {
+				case 'ok':
+					$this->connect( json_decode( base64_decode( $_GET['mythemeshop_auth'] ), true ) );
+					break;
+
+				case 'banned':
+					// TODO: Handle banned & cancel
+					break;
+
+				case 'cancel':
+
+					break;
+			}
+		}
+	}
+
+	public function connect( $data ) {
+		$this->connect_data['username']  = $data['username'];
+		$this->connect_data['email']     = $data['email'];
+		$this->connect_data['api_key']   = $data['api_key'];
+		$this->connect_data['connected'] = true;
+		$this->update_data();
+		wp_safe_redirect( admin_url( 'admin.php?page=mts-connect&mythemeshop_connect_status=success' ), 302 );
+		die();
+	}
+
+	public function disconnect() {
+		$this->connect_data['username']  = '';
+		$this->connect_data['email']     = '';
+		$this->connect_data['api_key']   = '';
+		$this->connect_data['connected'] = false;
+		$this->update_data();
+
+		// remove theme updates for mts themes in transient by searching through 'packages' properties for 'mythemeshop'
+		$transient = get_site_transient( 'update_themes' );
+		delete_site_transient( 'mts_update_themes' );
+		delete_site_transient( 'mts_update_themes_no_access' );
+		if ( $transient && ! empty( $transient->response ) ) {
+			foreach ( $transient->response as $theme => $data ) {
+				if ( strstr( $data['package'], 'mythemeshop' ) !== false ) {
+					unset( $transient->response[ $theme ] );
+				}
+			}
+			set_site_transient( 'update_themes', $transient );
+		}
+		$transient = get_site_transient( 'update_plugins' );
+		delete_site_transient( 'mts_update_plugins' );
+		delete_site_transient( 'mts_update_plugins_no_access' );
+		if ( $transient && ! empty( $transient->response ) ) {
+			foreach ( $transient->response as $plugin => $data ) {
+				if ( strstr( $data->package, 'mythemeshop' ) !== false ) {
+					unset( $transient->response[ $plugin ] );
+				}
+			}
+			set_site_transient( 'update_plugins', $transient );
+		}
+		$this->reset_notices();
+	}
 
 }

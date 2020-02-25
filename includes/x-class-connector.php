@@ -15,7 +15,6 @@ defined( 'ABSPATH' ) || exit;
  * Connector class.
  */
 class Connector {
-	private $api_url = 'https://mtssta-5756.bolt72.servebolt.com/mtsapi/v1/';
 
 	public function connect() {
 		header( 'Content-type: application/json' );
@@ -56,9 +55,9 @@ class Connector {
 			if ( isset( $data['notices'] ) && is_array( $data['notices'] ) ) {
 				foreach ( $data['notices'] as $notice ) {
 					if ( ! empty( $notice['network_notice'] ) ) {
-						$this->add_network_notice( (array) $notice );
+						Core::get( 'notifications' )->add_network_notice( (array) $notice );
 					} else {
-						$this->add_sticky_notice( (array) $notice );
+						Core::get( 'notifications' )->add_sticky_notice( (array) $notice );
 					}
 				}
 			}
@@ -138,9 +137,9 @@ class Connector {
 			if ( isset( $data['notices'] ) && is_array( $data['notices'] ) ) {
 				foreach ( $data['notices'] as $notice ) {
 					if ( ! empty( $notice['network_notice'] ) ) {
-						$this->add_network_notice( (array) $notice );
+						Core::get( 'notifications' )->add_network_notice( (array) $notice );
 					} else {
-						$this->add_sticky_notice( (array) $notice );
+						Core::get( 'notifications' )->add_sticky_notice( (array) $notice );
 					}
 				}
 			}

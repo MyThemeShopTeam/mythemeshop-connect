@@ -14,11 +14,12 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Theme_Checker class.
  */
-class Theme_Checker {
+class Theme_Checker extends Checker {
 
 	public function __construct() {
 		add_filter( 'pre_set_site_transient_update_themes', array( $this, 'check_theme_updates' ) );
 
+		parent::__construct();
 	}
 
 	public function update_themes_now() {
@@ -102,14 +103,14 @@ class Theme_Checker {
 				'sites'          => $sites_themes,
 				'php_version'    => phpversion(),
 				'wp_version'     => $wp_version,
-				'plugin_version' => $this->plugin_get_version(),
+				'plugin_version' => MTS_CONNECT_VERSION,
 			),
 		);
 
 		// is connected
-		if ( $this->is_connected() ) {
-			$send_to_api['user'] = $this->connect_data['username'];
-			$send_to_api['key']  = $this->connect_data['api_key'];
+		if ( Core::is_connected() ) {
+			$send_to_api['user'] = Core::get_instance()->connect_data['username'];
+			$send_to_api['key']  = Core::get_instance()->connect_data['api_key'];
 		} else {
 			$r = 'guest/' . $r;
 		}
@@ -119,8 +120,8 @@ class Theme_Checker {
 			'body'    => $send_to_api,
 		);
 
-		$last_update   = new stdClass();
-		$no_access     = new stdClass();
+		$last_update   = new \stdClass();
+		$no_access     = new \stdClass();
 		$theme_request = wp_remote_post( $this->api_url . $r, $options );
 
 		if ( ! is_wp_error( $theme_request ) && wp_remote_retrieve_response_code( $theme_request ) == 200 ) {
@@ -150,9 +151,9 @@ class Theme_Checker {
 				if ( ! empty( $theme_response['notices'] ) ) {
 					foreach ( $theme_response['notices'] as $notice ) {
 						if ( ! empty( $notice['network_notice'] ) ) {
-							$this->add_network_notice( (array) $notice );
+							Core::get( 'notifications' )->add_network_notice( (array) $notice );
 						} else {
-							$this->add_sticky_notice( (array) $notice );
+							Core::get( 'notifications' )->add_sticky_notice( (array) $notice );
 						}
 					}
 				}

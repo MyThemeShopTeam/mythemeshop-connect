@@ -40,18 +40,15 @@ class Notifications {
 			'context'  => array(),
 		);
 
-		// show notices
+		// Show notices.
 		if ( is_multisite() ) {
 			add_action( 'network_admin_notices', array( $this, 'show_notices' ) );
 		} else {
 			add_action( 'admin_notices', array( $this, 'show_notices' ) );
 		}
 
-		// user has dismissed a notice?
+		// User has dismissed a notice?
 		add_action( 'admin_init', array( $this, 'dismiss_notices' ) );
-
-		// remove old notifications
-		add_action( 'after_setup_theme', array( $this, 'after_theme' ) );
 
 	}
 
@@ -138,7 +135,7 @@ class Notifications {
 
 	// Network notices are additional API messages (news and offers) that can be switched off with an option
 	public function add_network_notice( $args ) {
-		if ( ! empty( $this->settings['network_notices'] ) ) {
+		if ( ! empty( Core::get_setting( 'network_notices' ) ) ) {
 			$args['network_notice'] = 1;
 			$this->add_sticky_notice( $args );
 		}
@@ -151,9 +148,9 @@ class Notifications {
 		global $current_user;
 		$user_id = $current_user->ID;
 
-		$ui_access_type = $this->settings['ui_access_type'];
-		$ui_access_role = $this->settings['ui_access_role'];
-		$ui_access_user = $this->settings['ui_access_user'];
+		$ui_access_type = Core::get_setting( 'ui_access_type' );
+		$ui_access_role = Core::get_setting( 'ui_access_role' );
+		$ui_access_user = Core::get_setting( 'ui_access_user' );
 
 		$admin_page_role    = 'manage_options';
 		$allow_admin_access = false;
@@ -250,24 +247,24 @@ class Notifications {
 			}
 
 			// network notice and disabled
-			if ( ! empty( $notice['network_notice'] ) && empty( $this->settings['network_notices'] ) ) {
+			if ( ! empty( $notice['network_notice'] ) && empty( Core::get_setting( 'network_notices' ) ) ) {
 				continue;
 			}
 			// base notice and disabled
-			if ( empty( $notice['network_notice'] ) && empty( $this->settings['update_notices'] ) ) {
+			if ( empty( $notice['network_notice'] ) && empty( Core::get_setting( 'update_notices' ) ) ) {
 				continue;
 			}
 
 			// update notice and disabled
 			$is_update_notice = ( strpos( $notice['class'], 'update-themes' ) !== false || strpos( $notice['class'], 'update-plugins' ) !== false );
-			if ( empty( $this->settings['update_notices'] ) && $is_update_notice ) {
+			if ( empty( Core::get_setting( 'update_notices' ) ) && $is_update_notice ) {
 				continue;
 			}
 
 			// context: connected
 			if ( isset( $notice['context']['connected'] ) ) {
-				if ( ( ! $notice['context']['connected'] && $this->connect_data['connected'] )
-					|| ( $notice['context']['connected'] && ! $this->connect_data['connected'] ) ) {
+				if ( ( ! $notice['context']['connected'] && Core::get_instance()->connect_data['connected'] )
+					|| ( $notice['context']['connected'] && ! Core::get_instance()->connect_data['connected'] ) ) {
 					continue; // skip this
 				}
 			}

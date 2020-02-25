@@ -14,9 +14,9 @@ defined( 'ABSPATH' ) || exit;
 /**
  * MTS_Theme_Compatibility class.
  */
-class MTS_Theme_Compatibility {
-	protected $mts_theme_in_use      = false;
-	protected $mts_plugins_in_use    = 0;
+class Compatibility {
+	public $mts_theme_in_use      = false;
+	public $mts_plugins_in_use    = 0;
 	protected $custom_admin_messages = array();
 	protected $ngmsg                 = '';
 	protected $plugin_file           = '';
@@ -46,12 +46,14 @@ class MTS_Theme_Compatibility {
 		}
 
 		add_action( 'init', array( $this, 'set_theme_defaults' ), -11, 1 );
-	}
 
-	public function is_free_plan() {
-		$themes = wp_get_themes();
-		return true;
-		// print_r($themes);die();
+		add_action( 'init', array( $this, 'init' ) );
+
+		// Fix false wordpress.org update notifications.
+		add_filter( 'pre_set_site_transient_update_themes', array( $this, 'fix_false_wp_org_theme_update_notification' ) );
+
+		// Remove old notifications & connect menu.
+		add_action( 'after_setup_theme', array( $this, 'after_theme' ) );
 	}
 
 	public function set_theme_defaults() {
@@ -150,8 +152,7 @@ class MTS_Theme_Compatibility {
 		<div
 		<?php
 		$this->str_convert(
-			'6964 3D226D74732D636F 6E 6E656374 2D6D6F64 616C2220636C6173 73 3D 22 6D74 73 2D636F6E 6E6563742D74 68 65 6D652D6D6F64616C222073 74796C653D22646973706C6179 3A6E6F6E653B 22
-',
+			'6964 3D226D74732D636F 6E 6E656374 2D6D6F64 616C2220636C6173 73 3D 22 6D74 73 2D636F6E 6E6563742D74 68 65 6D652D6D6F64616C222073 74796C653D22646973706C6179 3A6E6F6E653B 22',
 			1
 		);
 		?>
@@ -159,7 +160,7 @@ class MTS_Theme_Compatibility {
 			<div></div>
 			<div>
 				<p><?php echo strip_tags( $this->ngmsg ); ?></p>
-				<?php $this->connect_form_html(); ?>
+				<?php Core::get( 'settings' )->connect_form_html(); ?>
 				<p><a class="button button-secondary" href="#"><?php $this->str_convert( '436F6E6E656374204C61746572', 1 ); ?></a></p>
 			</div>
 		</div>
@@ -169,7 +170,7 @@ class MTS_Theme_Compatibility {
 
 	public function add_reminder() {
 		$exclude_pages = array( 'toplevel_page_mts-connect', 'toplevel_page_mts-connect-network', 'toplevel_page_mts-install-plugins' );
-		$connected     = ( ! empty( $this->connect_data['connected'] ) && empty( $_GET['disconnect'] ) );
+		$connected     = Core::is_connected();
 
 		$screen = get_current_screen();
 		// Never show on excluded pages
@@ -182,7 +183,7 @@ class MTS_Theme_Compatibility {
 		}
 		if ( ! $connected ) {
 			if ( $this->mts_theme_in_use || $this->mts_plugins_in_use ) {
-				$this->add_notice(
+				Core::get( 'notifications' )->add_notice(
 					array(
 						'content' => $this->ngmsg,
 						'class'   => 'error',
@@ -199,7 +200,8 @@ class MTS_Theme_Compatibility {
 	 * @return void
 	 */
 	public function load_connector() {
-		require_once MTS_CONNECT_INCLUDES . 'class-mts_connector.php';
+		require_once MTS_CONNECT_INCLUDES . 'class-mts-connector.php';
+		require_once MTS_CONNECT_INCLUDES . 'class-mts-connection.php';
 	}
 
 	public function nhp_opts( $opts ) {
@@ -349,5 +351,41 @@ class MTS_Theme_Compatibility {
 		}
 
 		return $string;
+	}
+
+	public function fix_false_wp_org_theme_update_notification( $val ) {
+		$allow_update = array( 'point', 'ribbon-lite' );
+		if ( is_object( $val ) && property_exists( $val, 'response' ) && is_array( $val->response ) ) {
+			foreach ( $val->response as $key => $value ) {
+				if ( isset( $value['theme'] ) ) {// added by WordPress
+					if ( in_array( $value['theme'], $allow_update ) ) {
+						continue;
+					}
+					$url       = $value['url'];// maybe wrong url for MyThemeShop theme
+					$theme     = wp_get_theme( $value['theme'] );// real theme object
+					$theme_uri = $theme->get( 'ThemeURI' );// theme url
+					// If it is MyThemeShop theme but wordpress.org have the theme with same name, remove it from update response
+					if ( false !== strpos( $theme_uri, 'mythemeshop.com' ) && false !== strpos( $url, 'wordpress.org' ) ) {
+						unset( $val->response[ $key ] );
+					}
+				}
+			}
+		}
+		return $val;
+	}
+
+	public function fix_false_wp_org_plugin_update_notification( $val ) {
+
+		if ( property_exists( $val, 'response' ) && is_array( $val->response ) ) {
+			foreach ( $val->response as $key => $value ) {
+				$url        = $value->url;
+				$plugin     = get_plugin_data( WP_PLUGIN_DIR . '/' . $key, false, false );
+				$plugin_uri = $plugin['PluginURI'];
+				if ( 0 !== strpos( $plugin_uri, 'mythemeshop.com' && 0 !== strpos( $url, 'wordpress.org' ) ) ) {
+					unset( $val->response[ $key ] );
+				}
+			}
+		}
+		return $val;
 	}
 }

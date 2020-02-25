@@ -7,6 +7,8 @@
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
+ *
+ * @package MyThemeShop_Connect
  */
 
 use MyThemeShop_Connect\Core;
@@ -15,6 +17,9 @@ defined( 'ABSPATH' ) || die;
 
 /* Sets the plugin version constant. */
 define( 'MTS_CONNECT_VERSION', '3.0' );
+
+/* Sets the plugin slug constant. */
+define( 'MTS_CONNECT_PLUGIN_FILE', 'mythemeshop-connect/mythemeshop-connect.php' );
 
 /* Sets the path to the plugin directory. */
 define( 'MTS_CONNECT_DIR', trailingslashit( plugin_dir_path( __FILE__ ) ) );
@@ -26,7 +31,7 @@ define( 'MTS_CONNECT_URI', trailingslashit( plugin_dir_url( __FILE__ ) ) );
 define( 'MTS_CONNECT_INCLUDES', MTS_CONNECT_DIR . trailingslashit( 'includes' ) );
 
 /* Sets the path to the `assets` directory. */
-define( 'MTS_CONNECT_ASSETS', MTS_CONNECT_URI . 'public/' );
+define( 'MTS_CONNECT_ASSETS', MTS_CONNECT_URI . 'assets/' );
 
 /* We're here. */
 define( 'MTS_CONNECT_ACTIVE', true );
@@ -35,4 +40,4 @@ define( 'MTS_CONNECT_ACTIVE', true );
 require_once MTS_CONNECT_INCLUDES . 'class-core.php';
 
 /* Run plugin */
-$mts_connection = new Core();
+$mts_connection = Core::get_instance();

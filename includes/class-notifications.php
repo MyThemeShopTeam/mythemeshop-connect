@@ -27,8 +27,6 @@ class Notifications {
 	private $dismissed_meta = 'mts_connect_dismissed_notices';
 
 	public function __construct() {
-		$this->sticky_notices = $this->get_notices();
-
 		// Notices default options
 		$this->notice_defaults = array(
 			'content'  => '',
@@ -49,7 +47,23 @@ class Notifications {
 
 		// User has dismissed a notice?
 		add_action( 'admin_init', array( $this, 'dismiss_notices' ) );
+		add_action( 'admin_init', array( $this, 'init' ) );
+	}
 
+	public function init() {
+		$this->sticky_notices = $this->get_notices();
+
+		$current_user = \wp_get_current_user();
+		// Tags to use in notifications.
+		$this->notice_tags = array(
+			'[logo_url]'       => MTS_CONNECT_ASSETS . 'img/mythemeshop-logo.png',
+			'[plugin_url]'     => network_admin_url( 'admin.php?page=mts-connect' ),
+			'[themes_url]'     => network_admin_url( 'themes.php' ),
+			'[plugins_url]'    => network_admin_url( 'plugins.php' ),
+			'[updates_url]'    => network_admin_url( 'update-core.php' ),
+			'[site_url]'       => site_url(),
+			'[user_firstname]' => $current_user->first_name,
+		);
 	}
 
 	public function ajax_mts_connect_dismiss_notices() {
@@ -99,6 +113,10 @@ class Notifications {
 	 * @return
 	 */
 	public function add_notice( $args ) {
+		if ( Core::get_instance()->invisible_mode ) {
+			return;
+		}
+
 		if ( empty( $args ) ) {
 			return;
 		}
@@ -145,6 +163,10 @@ class Notifications {
 		update_site_option( $this->notices_option, $this->sticky_notices );
 	}
 	public function show_notices() {
+		if ( Core::get_instance()->invisible_mode ) {
+			return;
+		}
+
 		global $current_user;
 		$user_id = $current_user->ID;
 

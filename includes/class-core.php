@@ -44,7 +44,7 @@ class Core {
 	 *
 	 * @var boolean
 	 */
-	private $invisible_mode = false;
+	public $invisible_mode = false;
 
 	/**
 	 * Connect data.
@@ -126,6 +126,8 @@ class Core {
 		add_filter( 'wp_prepare_themes_for_js', array( $this, 'brand_theme_updates' ), 21 );
 		add_action( 'after_plugin_row_' . MTS_CONNECT_PLUGIN_FILE, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 		add_action( 'admin_init', array( $this, 'handle_connect' ), 10, 2 );
+		add_action( 'activated_plugin', array( $this, 'check_free_plan' ), 10, 1 );
+		add_action( 'after_switch_theme', array( $this, 'check_free_plan' ), 10, 1 );
 	}
 
 	/**
@@ -195,8 +197,8 @@ class Core {
 	 * @return void
 	 */
 	public function plugin_activated() {
-		$this->update_themes_now();
-		$this->update_plugins_now();
+		self::get( 'theme_checker' )->update_themes_now();
+		self::get( 'plugin_checker' )->update_plugins_now();
 	}
 
 	/**
@@ -205,7 +207,7 @@ class Core {
 	 * @return void
 	 */
 	public function plugin_deactivated() {
-		$this->reset_notices(); // Todo: reset for all admins.
+		self::get( 'notifications' )->reset_notices(); // Todo: reset for all admins.
 		$this->disconnect();
 		do_action( 'mts_connect_deactivate' );
 	}
@@ -217,18 +219,18 @@ class Core {
 			switch ( $screen->id ) {
 				case 'themes':
 				case 'themes-network':
-					$this->update_themes_now();
+					self::get( 'theme_checker' )->update_themes_now();
 					break;
 
 				case 'plugins':
 				case 'plugins-network':
-					$this->update_plugins_now();
+					self::get( 'plugin_checker' )->update_plugins_now();
 					break;
 
 				case 'update-core':
 				case 'network-update-core':
-					$this->update_themes_now();
-					$this->update_plugins_now();
+					self::get( 'theme_checker' )->update_themes_now();
+					self::get( 'plugin_checker' )->update_plugins_now();
 					break;
 			}
 		}
@@ -619,10 +621,52 @@ class Core {
 		echo '</p></div></td></tr>';
 	}
 
+	public function mts_product_type_extra_header( $headers ) {
+		$headers[] = 'MTS Product Type';
+		return $headers;
+	}
+
+	public function check_free_plan( $theme_or_plugin ) {
+		$is_free = true;
+		add_filter( 'extra_theme_headers', array( $this, 'mts_product_type_extra_header' ) );
+		$themes = \wp_get_themes();
+		remove_filter( 'extra_theme_headers', array( $this, 'mts_product_type_extra_header' ) );
+		foreach ( $themes as $slug => $theme ) {
+			$product_type = $theme->get('MTS Product Type');
+			if ( mb_strtolower( $product_type ) == 'premium' ) {
+				$is_free = false;
+				break;
+			}
+		}
+
+		if ( $is_free ) {
+			if ( ! function_exists( 'get_plugins' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			}
+			add_filter( 'extra_plugin_headers', array( $this, 'mts_product_type_extra_header' ) );
+			$plugins = \get_plugins();
+			remove_filter( 'extra_plugin_headers', array( $this, 'mts_product_type_extra_header' ) );
+			foreach ( $plugins as $slug => $plugin ) {
+				$product_type = isset( $plugin['MTS Product Type'] ) ? $plugin['MTS Product Type'] : '';
+				if ( mb_strtolower( $product_type ) == 'premium' ) {
+					$is_free = false;
+					break;
+				}
+			}
+		}
+		update_option( 'mts_free_plan', (int) $is_free );
+
+		return $is_free;
+	}
+
 	public function is_free_plan() {
-		$themes = wp_get_themes();
-		return true;
-		// print_r($themes);die();
+		$stored = get_option( 'mts_free_plan', false );
+		if ( $stored !== false ) {
+			return (bool) $stored;
+		}
+
+		$is_free = $this->check_free_plan();
+		return $is_free;
 	}
 
 	public function handle_connect() {
@@ -683,7 +727,7 @@ class Core {
 			}
 			set_site_transient( 'update_plugins', $transient );
 		}
-		$this->reset_notices();
+		self::get( 'notifications' )->reset_notices();
 	}
 
 }

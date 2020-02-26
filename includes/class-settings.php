@@ -17,7 +17,6 @@ defined( 'ABSPATH' ) || exit;
 class Settings {
 
 	public function __construct() {
-
 		add_action( 'admin_init', array( $this, 'admin_init' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
 
@@ -31,6 +30,10 @@ class Settings {
 	}
 
 	public function admin_menu() {
+		if ( Core::get_instance()->invisible_mode ) {
+			return;
+		}
+
 		global $current_user;
 		$user_id = $current_user->ID;
 
@@ -66,16 +69,6 @@ class Settings {
 		$updates_available = Core::has_new_updates();
 
 		$current_user = wp_get_current_user();
-		// Tags to use in notifications
-		$this->notice_tags = array(
-			'[logo_url]'       => MTS_CONNECT_ASSETS . 'img/mythemeshop-logo.png',
-			'[plugin_url]'     => network_admin_url( 'admin.php?page=mts-connect' ),
-			'[themes_url]'     => network_admin_url( 'themes.php' ),
-			'[plugins_url]'    => network_admin_url( 'plugins.php' ),
-			'[updates_url]'    => network_admin_url( 'update-core.php' ),
-			'[site_url]'       => site_url(),
-			'[user_firstname]' => $current_user->first_name,
-		);
 
 		// Fix for false wordpress.org update notifications
 		// If wrong updates are already shown, delete transients
@@ -142,7 +135,7 @@ class Settings {
 
 	public function ui_onload() {
 		if ( isset( $_GET['disconnect'] ) && $_GET['disconnect'] == 1 ) {
-			$this->disconnect();
+			Core::get_instance()->disconnect();
 			Core::get( 'notifications' )->add_notice(
 				array(
 					'content' => __( 'Disconnected.', 'mythemeshop-connect' ),
@@ -151,7 +144,7 @@ class Settings {
 			);
 		}
 		if ( isset( $_GET['reset_notices'] ) && $_GET['reset_notices'] == 1 ) {
-			$this->reset_notices();
+			Core::get( 'notifications' )->reset_notices();
 			Core::get( 'notifications' )->add_notice( array( 'content' => __( 'Notices reset.', 'mythemeshop-connect' ) ) );
 		}
 		if ( isset( $_GET['mts_changelog'] ) ) {

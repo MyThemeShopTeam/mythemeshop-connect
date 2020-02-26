@@ -85,8 +85,8 @@ class Ajax {
 	}
 
 	public function update_settings() {
-		$this->set_settings( $_POST );
-		$this->update_settings();
+		Core::get_instance()->set_settings( $_POST );
+		Core::get_instance()->update_settings();
 
 		exit;
 	}

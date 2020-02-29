@@ -15,17 +15,41 @@ defined( 'ABSPATH' ) || exit;
  * MTS_Theme_Compatibility class.
  */
 class Compatibility {
-	public $mts_theme_in_use      = false;
-	public $mts_plugins_in_use    = 0;
-	protected $custom_admin_messages = array();
-	protected $ngmsg                 = '';
-	protected $plugin_file           = '';
-	public function __construct() {
-		$this->plugin_file = 'mythemeshop-connect/mythemeshop-connect.php';
+	/**
+	 * Check if any MTS theme is in use on the site.
+	 *
+	 * @var bool
+	 */
+	public $mts_theme_in_use = false;
 
+	/**
+	 * Get the number of MTS plugins in use on the site.
+	 *
+	 * @var int
+	 */
+	public $mts_plugins_in_use = 0;
+
+	/**
+	 * Hold custom messages for theme & plugin settings screens.
+	 *
+	 * @var array
+	 */
+	protected $custom_admin_messages = array();
+
+	/**
+	 * Nagging message.
+	 *
+	 * @var string
+	 */
+	protected $ngmsg = '';
+
+	/**
+	 * Constructor method.
+	 */
+	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
 
-		$connected = ( ! empty( $this->connect_data['connected'] ) );
+		$connected = Core::is_connected();
 		add_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
 
 		if ( $connected ) {
@@ -39,10 +63,11 @@ class Compatibility {
 
 		add_action( 'plugins_loaded', array( $this, 'load_connector' ), 9 );
 
-		if ( empty( $this->connect_data['connected'] ) ) {
+		if ( ! $connected ) {
 			add_filter( 'nhp-opts-sections', array( $this, 'nhp_sections' ), 10, 1 );
 			add_filter( 'nhp-opts-args', array( $this, 'nhp_opts' ), 10, 1 );
 			add_filter( 'nhp-opts-extra-tabs', '__return_empty_array', 11, 1 );
+			add_action( 'current_screen', array( $this, 'add_reminder' ), 10, 1 );
 		}
 
 		add_action( 'init', array( $this, 'set_theme_defaults' ), -11, 1 );
@@ -54,8 +79,13 @@ class Compatibility {
 
 		// Remove old notifications & connect menu.
 		add_action( 'after_setup_theme', array( $this, 'after_theme' ) );
+
+		$this->ngmsg = $this->str_convert('596F75 206E65656420746F20 3C6120687265663D225B70 6C7567696E5F757 26C5D223E636F6E6E6563742 0776974 6820796F7572204D795468656D65536 86F70206163 636F756E743C2F613E2074 6F207573652 07468652063757272 656E74207468656D652 06F7220706C7567696E2E');
 	}
 
+	/**
+	 * Set theme defaults.
+	 */
 	public function set_theme_defaults() {
 		if ( defined( 'MTS_THEME_NAME' ) ) {
 			if ( ! get_option( MTS_THEME_NAME, false ) ) {
@@ -65,17 +95,39 @@ class Compatibility {
 		}
 	}
 
+	/**
+	 * Define theme constant.
+	 *
+	 * @return void
+	 */
 	public function init() {
-		define( 'MTS_THEME_T', 'mts' . 'the' );
+		$the = 'the';
+		define( 'MTS_THEME_T', 'mts' . $the );
 	}
 
+	/**
+	 * Add hook to remove old "Theme Updates" page from older themes.
+	 *
+	 * @return void
+	 */
 	public function after_theme() {
 		add_action( 'admin_menu', array( $this, 'remove_themeupdates_page' ) );
 	}
+
+	/**
+	 * Remove old "Theme Updates" page from older themes.
+	 *
+	 * @return void
+	 */
 	public function remove_themeupdates_page() {
 		remove_submenu_page( 'index.php', 'mythemeshop-updates' );
 	}
 
+	/**
+	 * Check how many MTS plugins we are using and store it in an option row.
+	 *
+	 * @return void
+	 */
 	public function check_for_mts_plugins() {
 		if ( ! function_exists( 'get_plugins' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -95,7 +147,7 @@ class Compatibility {
 		}
 
 		foreach ( $active_plugins as $plugin_file ) {
-			if ( $plugin_file == $this->plugin_file ) {
+			if ( $plugin_file == MTS_CONNECT_PLUGIN_FILE ) {
 				continue;
 			}
 			if ( isset( $all_plugins[ $plugin_file ] ) && isset( $all_plugins[ $plugin_file ]['Author'] ) && stripos( $all_plugins[ $plugin_file ]['Author'], 'MyThemeShop' ) !== false ) {
@@ -104,10 +156,13 @@ class Compatibility {
 		}
 
 		update_option( 'mts_plugins_active', $hash . '-' . $this->mts_plugins_in_use );
-		return;
-
 	}
 
+	/**
+	 * Check if we are using a MTS theme and store it in an option row.
+	 *
+	 * @return void
+	 */
 	public function check_for_mts_theme() {
 		// Check for mts_theme once.
 		if ( ( $stored = get_option( 'mts_theme_active', false ) ) !== false ) {
@@ -123,7 +178,7 @@ class Compatibility {
 			return;
 		}
 
-		// Also check parent
+		// Also check parent.
 		if ( $theme->parent() ) {
 			$parent_author = $theme->parent()->get( 'Author' );
 			if ( stripos( $parent_author, 'MyThemeShop' ) !== false ) {
@@ -134,19 +189,30 @@ class Compatibility {
 		}
 
 		update_option( 'mts_theme_active', '0' );
-		return;
 	}
 
+	/**
+	 * Clear option that stores if we are using a MTS theme.
+	 *
+	 * @return void
+	 */
 	public function clear_theme_check() {
 		delete_option( 'mts_theme_active' );
 	}
 
-
+	/**
+	 * Add overlay to connect.
+	 */
 	public function add_overlay() {
 		add_thickbox();
 		add_action( 'admin_footer', array( $this, 'show_overlay' ), 10, 1 );
 	}
 
+	/**
+	 * Show overlay to connect.
+	 *
+	 * @return void
+	 */
 	public function show_overlay() {
 		?>
 		<div
@@ -167,35 +233,34 @@ class Compatibility {
 		<?php
 	}
 
-
+	/**
+	 * Add reminder message.
+	 */
 	public function add_reminder() {
 		$exclude_pages = array( 'toplevel_page_mts-connect', 'toplevel_page_mts-connect-network', 'toplevel_page_mts-install-plugins' );
-		$connected     = Core::is_connected();
 
 		$screen = get_current_screen();
-		// Never show on excluded pages
-		if ( in_array( $screen->id, $exclude_pages ) ) {
+		// Never show on excluded pages.
+		if ( in_array( $screen->id, $exclude_pages, true ) ) {
 			return;
 		}
-		// Multisite: show only on network admin
+		// Multisite: show only on network admin.
 		if ( is_multisite() && ! is_network_admin() ) {
 			return;
 		}
-		if ( ! $connected ) {
-			if ( $this->mts_theme_in_use || $this->mts_plugins_in_use ) {
-				Core::get( 'notifications' )->add_notice(
-					array(
-						'content' => $this->ngmsg,
-						'class'   => 'error',
-					)
-				);
-				$this->add_overlay();
-			}
+		if ( $this->mts_theme_in_use || $this->mts_plugins_in_use ) {
+			Core::get( 'notifications' )->add_notice(
+				array(
+					'content' => $this->ngmsg,
+					'class'   => 'error',
+				)
+			);
+			$this->add_overlay();
 		}
 	}
 
 	/**
-	 * Load legacy class for backwards compatibility.
+	 * Load legacy classes for backwards compatibility.
 	 *
 	 * @return void
 	 */
@@ -204,6 +269,12 @@ class Compatibility {
 		require_once MTS_CONNECT_INCLUDES . 'class-mts-connection.php';
 	}
 
+	/**
+	 * Set NHP options.
+	 *
+	 * @param  array $opts Original options array.
+	 * @return array       New options array.
+	 */
 	public function nhp_opts( $opts ) {
 		$opts['show_import_export']    = false;
 		$opts['show_typography']       = false;
@@ -214,26 +285,29 @@ class Compatibility {
 		return $opts;
 	}
 
+	/**
+	 * Set NHP sections.
+	 *
+	 * @param  array $sections Original sections array.
+	 * @return array       New sections array.
+	 */
 	public function nhp_sections( $sections ) {
 		$url        = network_admin_url( 'admin.php?page=mts-connect' );
 		$sections[] = array(
 			'icon'   => 'fa fa-cogs',
 			'title'  => __( 'Not Connected', 'mythemeshop-connect' ),
-			'desc'   => '<p class="description">' . __( 'You will find all the theme options here after <a href="' . $url . '">connecting with your MyThemeShop account</a>.', 'mythemeshop-connect' ) . '</p>',
-			'fields' => array(
-				/*
-				array(
-					'id' => 'mts_logo',
-					'type' => 'upload',
-					'title' => __('Logo Image', 'mythemeshop-connect' ),
-					'sub_desc' => __('Upload your logo using the Upload Button or insert image URL. Preferable Size 120px X 28px', 'mythemeshop-connect' ),
-					'return' => 'id'
-					),*/
-			),
+			// Translators: placeholder is a URL.
+			'desc'   => '<p class="description">' . sprintf( __( 'You will find all the theme options here after <a href="%s">connecting with your MyThemeShop account</a>.', 'mythemeshop-connect' ), $url ) . '</p>',
+			'fields' => array(),
 		);
 		return $sections;
 	}
 
+	/**
+	 * Replace admin pages if needed.
+	 *
+	 * @return void
+	 */
 	public function replace_admin_pages() {
 		$default_title = __( 'Settings', 'mythemeshop-connect' );
 		/* Translators: 1 is opening tag for link to admin page, 2 is closing tag for the same */
@@ -307,6 +381,13 @@ class Compatibility {
 		add_action( 'add_meta_boxes', array( $this, 'remove_meta_boxes' ), 99, 2 );
 	}
 
+	/**
+	 * Remove meta boxes if needed.
+	 *
+	 * @param  string $post_type Post type name.
+	 * @param  object $post      Post object.
+	 * @return void
+	 */
 	public function remove_meta_boxes( $post_type, $post ) {
 		$remove_meta_boxes = array(
 			'wp-review-metabox-review',
@@ -323,6 +404,11 @@ class Compatibility {
 		}
 	}
 
+	/**
+	 * Replace plugin settings page if needed.
+	 *
+	 * @return void
+	 */
 	public function replace_settings_page() {
 		$hookname = current_filter();
 		$data     = $this->custom_admin_messages[ $hookname ];
@@ -337,7 +423,13 @@ class Compatibility {
 		<?php
 	}
 
-
+	/**
+	 * String converter.
+	 *
+	 * @param  string  $text String to convert.
+	 * @param  boolean $echo Output results.
+	 * @return mixed         Resulting string if $echo is false, otherwise true.
+	 */
 	public function str_convert( $text, $echo = false ) {
 		$text   = preg_replace( '/\s+/', '', $text );
 		$string = '';
@@ -353,6 +445,12 @@ class Compatibility {
 		return $string;
 	}
 
+	/**
+	 * Fix wrong theme notifications coming from the repo.
+	 *
+	 * @param  object $val Updates data object.
+	 * @return object      New updates data object.
+	 */
 	public function fix_false_wp_org_theme_update_notification( $val ) {
 		$allow_update = array( 'point', 'ribbon-lite' );
 		if ( is_object( $val ) && property_exists( $val, 'response' ) && is_array( $val->response ) ) {
@@ -374,8 +472,13 @@ class Compatibility {
 		return $val;
 	}
 
+	/**
+	 * Fix wrong plugin notifications coming from the repo.
+	 *
+	 * @param  object $val Updates data object.
+	 * @return object      New updates data object.
+	 */
 	public function fix_false_wp_org_plugin_update_notification( $val ) {
-
 		if ( property_exists( $val, 'response' ) && is_array( $val->response ) ) {
 			foreach ( $val->response as $key => $value ) {
 				$url        = $value->url;

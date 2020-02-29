@@ -126,8 +126,7 @@ class Core {
 		add_filter( 'wp_prepare_themes_for_js', array( $this, 'brand_theme_updates' ), 21 );
 		add_action( 'after_plugin_row_' . MTS_CONNECT_PLUGIN_FILE, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 		add_action( 'admin_init', array( $this, 'handle_connect' ), 10, 2 );
-		add_action( 'activated_plugin', array( $this, 'check_free_plan' ), 10, 1 );
-		add_action( 'after_switch_theme', array( $this, 'check_free_plan' ), 10, 1 );
+		add_action( 'upgrader_process_complete', array( $this, 'has_premium_mts_products' ), 10, 1 );
 	}
 
 	/**
@@ -212,7 +211,11 @@ class Core {
 		do_action( 'mts_connect_deactivate' );
 	}
 
-
+	/**
+	 * Check now if 'force-check' param is set.
+	 *
+	 * @return void
+	 */
 	public function maybe_force_check() {
 		if ( isset( $_GET['force-check'] ) && $_GET['force-check'] == 1 ) {
 			$screen = get_current_screen();
@@ -236,6 +239,13 @@ class Core {
 		}
 	}
 
+	/**
+	 * Check updates data object to see if there's any new MTS update available.
+	 *
+	 * @param object $transient Updates data to check.
+	 *
+	 * @return int              Number of updates available.
+	 */
 	public static function has_new_updates( $transient = null ) {
 		if ( ! $transient ) {
 			$updates_available = false;
@@ -263,10 +273,20 @@ class Core {
 		return 0;
 	}
 
+	/**
+	 * Is site connected or not.
+	 *
+	 * @return boolean Whether it has connected already.
+	 */
 	public static function is_connected() {
 		return ( ! empty( self::$instance->connect_data['connected'] ) );
 	}
 
+	/**
+	 * Get connected user data.
+	 *
+	 * @return array Data.
+	 */
 	public function get_data() {
 		$options = get_site_option( $this->data_option );
 		if ( empty( $options ) ) {
@@ -274,6 +294,12 @@ class Core {
 		}
 		return $options;
 	}
+
+	/**
+	 * Get current settings or default settings.
+	 *
+	 * @return [type] [description]
+	 */
 	public function get_settings() {
 		$settings = get_site_option( $this->settings_option );
 
@@ -281,7 +307,7 @@ class Core {
 			$settings = $this->default_settings;
 			update_site_option( $this->settings_option, $settings );
 		} else {
-			// Set defaults if not set
+			// Set defaults if not set.
 			$update_settings = false;
 			foreach ( $this->default_settings as $option => $default ) {
 				if ( ! isset( $settings[ $option ] ) ) {
@@ -296,6 +322,11 @@ class Core {
 		return $settings;
 	}
 
+	/**
+	 * Change settings.
+	 *
+	 * @param array $new_settings New settings array.
+	 */
 	public function set_settings( $new_settings ) {
 		foreach ( $this->default_settings as $setting_key => $setting_value ) {
 			if ( isset( $new_settings[ $setting_key ] ) ) {
@@ -304,15 +335,29 @@ class Core {
 		}
 	}
 
-
+	/**
+	 * Update changed data in DB.
+	 *
+	 * @return void
+	 */
 	protected function update_data() {
 		update_site_option( $this->data_option, $this->connect_data );
 	}
 
+	/**
+	 * Update changed settings in DB.
+	 *
+	 * @return void
+	 */
 	protected function update_settings() {
 		update_site_option( $this->settings_option, $this->settings );
 	}
 
+	/**
+	 * Show changelog in plugin information popup.
+	 *
+	 * @return void
+	 */
 	public function install_plugin_information() {
 		if ( empty( $_REQUEST['plugin'] ) ) {
 			return;
@@ -339,6 +384,11 @@ class Core {
 		}
 	}
 
+	/**
+	 * Add list of MTS updates on Updates page.
+	 *
+	 * @return void
+	 */
 	public function brand_updates_page() {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return;
@@ -437,6 +487,12 @@ class Core {
 
 	}
 
+	/**
+	 * Get human-readable explanation.
+	 *
+	 * @param  string $reason Reason code.
+	 * @return string         Reason text.
+	 */
 	public function reason_string( $reason ) {
 		switch ( $reason ) {
 			case 'subscription_expired':
@@ -451,6 +507,11 @@ class Core {
 		return $reason;
 	}
 
+	/**
+	 * Check updates table and add hook for the appropriate rows.
+	 *
+	 * @return void
+	 */
 	public function brand_updates_table() {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return;
@@ -471,13 +532,23 @@ class Core {
 		}
 	}
 
+	/**
+	 * Add custom message to MTS updates with no access.
+	 *
+	 * @param string $file        Plugin file.
+	 * @param array  $plugin_data Plugin data.
+	 * @param string $status      Status.
+	 *
+	 * @return void
+	 */
 	public function brand_updates_plugin_row( $file, $plugin_data, $status ) {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return;
 		}
 
-		// @@todo: add changelog link in notice
-		$row_text     = __( 'There is a new version of %1$s available. Automatic update for this product is unavailable.', 'mythemeshop-connect' );
+		// @TODO: add changelog link in notice.
+		// Translators:
+		$row_text     = __( 'There is a new version of %s available. Automatic update for this product is unavailable.', 'mythemeshop-connect' );
 		$active_class = '';
 		if ( is_network_admin() ) {
 			$active_class = is_plugin_active_for_network( $file ) ? ' active' : '';
@@ -523,6 +594,11 @@ class Core {
 		<?php
 	}
 
+	/**
+	 * Add some JS for the Updates table, to show our confirm dialog.
+	 *
+	 * @return void
+	 */
 	public function updates_table_custom_js() {
 		?>
 		<script type="text/javascript">
@@ -571,8 +647,15 @@ class Core {
 		<?php
 	}
 
+	/**
+	 * Add custom message to MTS theme updates with no access.
+	 *
+	 * @param array $themes Themes list.
+	 *
+	 * @return array $themes New themes list.
+	 */
 	public function brand_theme_updates( $themes ) {
-
+		// Translators: 1 - Theme name; 2 - Theme page URL; 3 - Additional attributes for the theme page link; 4 - Version number.
 		$html = '<p><strong>' . __( 'There is a new version of %1$s available. <a href="%2$s" %3$s>View version %4$s details</a>. <em>Automatic update is unavailable for this theme.</em>' ) . '</strong></p>';
 
 		$themes_noaccess_transient = get_site_transient( 'mts_update_themes_no_access' );
@@ -582,7 +665,7 @@ class Core {
 					$themes[ $theme_slug ]['hasUpdate']  = 1;
 					$themes[ $theme_slug ]['hasPackage'] = 0;
 
-					// Get theme
+					// Get theme.
 					$theme                           = wp_get_theme( $theme_slug );
 					$theme_name                      = $theme->display( 'Name' );
 					$details_url                     = $theme_data['changelog'];
@@ -605,6 +688,14 @@ class Core {
 		return $themes;
 	}
 
+	/**
+	 * Add notice about deactivating MTS Updater.
+	 *
+	 * @param  string $file        Plugin file.
+	 * @param  array  $plugin_data Plugin info.
+	 *
+	 * @return void
+	 */
 	public function plugin_row_deactivate_notice( $file, $plugin_data ) {
 		if ( is_multisite() && ! is_network_admin() && is_plugin_active_for_network( $file ) ) {
 			return;
@@ -616,17 +707,34 @@ class Core {
 
 		$wp_list_table = _get_list_table( 'WP_Plugins_List_Table' );
 
-		echo '<tr class="plugin-update-tr active mts-deactivate-notice-row" id="' . '" data-slug="" data-plugin="' . esc_attr( $file ) . '"><td colspan="' . esc_attr( $wp_list_table->get_column_count() ) . '" class="plugin-update colspanchange"><div class="notice inline notice-inline-mts-message notice-alt"><p>';
+		echo '<tr class="plugin-update-tr active mts-deactivate-notice-row" data-slug="" data-plugin="' . esc_attr( $file ) . '"><td colspan="' . esc_attr( $wp_list_table->get_column_count() ) . '" class="plugin-update colspanchange"><div class="notice inline notice-inline-mts-message notice-alt"><p>';
 		echo '<strong>' . __( 'Important Notice:' ) . '</strong> ' . __( 'You have a currently active MyThemeShop theme or plugin on this site. If you deactivate this required plugin, other MyThemeShop products may not function correctly and they may be automatically deactivated.', 'mythemeshop-connect' );
 		echo '</p></div></td></tr>';
 	}
 
+	/**
+	 * Add extra theme/plugin file info header.
+	 *
+	 * @param  array $headers Original headers.
+	 *
+	 * @return array New headers.
+	 */
 	public function mts_product_type_extra_header( $headers ) {
 		$headers[] = 'MTS Product Type';
 		return $headers;
 	}
 
-	public function check_free_plan( $theme_or_plugin ) {
+	/**
+	 * Check if we're using any MTS Premium product.
+	 *
+	 * @param  mixed $upgrader_instance WP_Upgrader or similar object instance when called from 'upgrader_process_complete' hook.
+	 *
+	 * @return bool Whether we're only using free products.
+	 */
+	public function has_premium_mts_products( $upgrader_instance = false ) {
+		if ( $upgrader_instance && ! is_a( $upgrader_instance, 'Theme_Upgrader' ) && ! is_a( $upgrader_instance, 'Theme_Upgrader' ) ) {
+			return;
+		}
 		$is_free = true;
 		add_filter( 'extra_theme_headers', array( $this, 'mts_product_type_extra_header' ) );
 		$themes = \wp_get_themes();
@@ -659,16 +767,27 @@ class Core {
 		return $is_free;
 	}
 
+	/**
+	 * Get stored info about whether we are using free products only. Run check
+	 * if there is no stored info.
+	 *
+	 * @return boolean Whether we are using free products only.
+	 */
 	public function is_free_plan() {
 		$stored = get_option( 'mts_free_plan', false );
 		if ( $stored !== false ) {
 			return (bool) $stored;
 		}
 
-		$is_free = $this->check_free_plan();
+		$is_free = ! $this->has_premium_mts_products();
 		return $is_free;
 	}
 
+	/**
+	 * Handle response from mythemeshop.com after connecting.
+	 *
+	 * @return void
+	 */
 	public function handle_connect() {
 		if ( isset( $_GET['mythemeshop_connect'] ) ) {
 			switch ( $_GET['mythemeshop_connect'] ) {
@@ -677,7 +796,7 @@ class Core {
 					break;
 
 				case 'banned':
-					// TODO: Handle banned & cancel
+					// @TODO: Handle banned & cancel
 					break;
 
 				case 'cancel':
@@ -687,6 +806,13 @@ class Core {
 		}
 	}
 
+	/**
+	 * Do connect.
+	 *
+	 * @param  array $data Data array.
+	 *
+	 * @return void
+	 */
 	public function connect( $data ) {
 		$this->connect_data['username']  = $data['username'];
 		$this->connect_data['email']     = $data['email'];
@@ -697,6 +823,11 @@ class Core {
 		die();
 	}
 
+	/**
+	 * Do disconnect.
+	 *
+	 * @return void
+	 */
 	public function disconnect() {
 		$this->connect_data['username']  = '';
 		$this->connect_data['email']     = '';

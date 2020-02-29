@@ -13,5 +13,4 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Legacy Connector class.
  */
-class MTS_Connection {
-}
+class MTS_Connection {}

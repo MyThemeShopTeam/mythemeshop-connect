@@ -22,10 +22,19 @@ class Checker {
 	 */
 	public $api_url = 'https://mtssta-5756.bolt72.servebolt.com/mtsapi/v1/';
 
+	/**
+	 * Dummy constructor method.
+	 */
 	public function __construct() {
 
 	}
 
+	/**
+	 * Determine if we need to check for updates or not.
+	 *
+	 * @param  mixed $updates_data Updates data.
+	 * @return bool                Whether checking is necessary.
+	 */
 	public function needs_check_now( $updates_data ) {
 		return apply_filters( 'mts_connect_needs_check', true, $updates_data );
 	}

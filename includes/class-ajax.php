@@ -11,47 +11,28 @@ namespace MyThemeShop_Connect;
 
 defined( 'ABSPATH' ) || exit;
 
+/**
+ * Ajax class.
+ */
 class Ajax {
 
+	/**
+	 * Constructor method.
+	 */
 	public function __construct() {
 		add_action( 'wp_ajax_mts_connect', array( $this, 'connect' ) );
 		add_action( 'wp_ajax_mts_connect_update_settings', array( $this, 'update_settings' ) );
-		add_action( 'wp_ajax_mts_connect_dismiss_notice', array( $this, 'dismiss_notices' ) );
 		add_action( 'wp_ajax_mts_connect_check_themes', array( $this, 'check_themes' ) );
 		add_action( 'wp_ajax_mts_connect_check_plugins', array( $this, 'check_plugins' ) );
 		add_action( 'wp_ajax_mts_connect_reset_notices', array( $this, 'reset_notices' ) );
+		add_action( 'wp_ajax_mts_connect_dismiss_notice', array( $this, 'dismiss_notices' ) );
 	}
 
 	/**
-	 * AJAX handler for theme check.
+	 * AJAX handler for first step of connecting.
 	 *
 	 * @return void
 	 */
-	public function check_themes() {
-		$this->update_themes_now();
-		$transient = get_site_transient( 'mts_update_themes' );
-		if ( is_object( $transient ) && isset( $transient->response ) ) {
-			echo count( $transient->response );
-		} else {
-			echo '0';
-		}
-
-		exit;
-	}
-
-
-	public function check_plugins() {
-		$this->update_plugins_now();
-		$transient = get_site_transient( 'mts_update_plugins' );
-		if ( is_object( $transient ) && isset( $transient->response ) ) {
-			echo count( $transient->response );
-		} else {
-			echo '0';
-		}
-
-		exit;
-	}
-
 	public function connect() {
 		header( 'Content-type: application/json' );
 		$output = array();
@@ -67,27 +48,87 @@ class Ajax {
 	}
 
 	/**
-	 * Get current page URL.
+	 * AJAX handler for theme check.
 	 *
-	 * @param  bool $ignore_qs Ignore query string.
-	 * @return string
+	 * @return void
 	 */
-	public static function get_current_page_url( $ignore_qs = false ) {
-		$link = '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-		$link = ( is_ssl() ? 'https' : 'http' ) . $link;
-
-		if ( $ignore_qs ) {
-			$link = explode( '?', $link );
-			$link = $link[0];
+	public function check_themes() {
+		if ( ! current_user_can( 'update_themes' ) ) {
+			return;
+		}
+		Core::get( 'theme_checker' )->update_themes_now();
+		$transient = get_site_transient( 'mts_update_themes' );
+		if ( is_object( $transient ) && isset( $transient->response ) ) {
+			echo count( $transient->response );
+		} else {
+			echo '0';
 		}
 
-		return $link;
+		exit;
 	}
 
+	/**
+	 * AJAX handler for plugin check.
+	 *
+	 * @return void
+	 */
+	public function check_plugins() {
+		if ( ! current_user_can( 'update_plugins' ) ) {
+			return;
+		}
+		Core::get( 'plugin_checker' )->update_plugins_now();
+		$transient = get_site_transient( 'mts_update_plugins' );
+		if ( is_object( $transient ) && isset( $transient->response ) ) {
+			echo count( $transient->response );
+		} else {
+			echo '0';
+		}
+
+		exit;
+	}
+
+	/**
+	 * AJAX handler for settings update.
+	 *
+	 * @return void
+	 */
 	public function update_settings() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
 		Core::get_instance()->set_settings( $_POST );
 		Core::get_instance()->update_settings();
 
+		exit;
+	}
+
+	/**
+	 * AJAX handler for dismissing notices.
+	 *
+	 * @return void
+	 */
+	public function ajax_mts_connect_dismiss_notices() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		if ( ! empty( $_POST['ids'] ) && is_array( $_POST['ids'] ) ) {
+			foreach ( $_POST['ids'] as $id ) {
+				Core::get( 'notifications' )->dismiss_notice( $id );
+			}
+		}
+		exit;
+	}
+
+	/**
+	 * AJAX handler for resetting all notices.
+	 *
+	 * @return void
+	 */
+	public function ajax_mts_connect_reset_notices() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		Core::get( 'notifications' )->reset_notices();
 		exit;
 	}
 }

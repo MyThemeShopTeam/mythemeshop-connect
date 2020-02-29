@@ -66,21 +66,6 @@ class Notifications {
 		);
 	}
 
-	public function ajax_mts_connect_dismiss_notices() {
-		if ( ! empty( $_POST['ids'] ) && is_array( $_POST['ids'] ) ) {
-			foreach ( $_POST['ids'] as $id ) {
-				$this->dismiss_notice( $id );
-			}
-		}
-		exit;
-	}
-
-	public function ajax_mts_connect_reset_notices() {
-		$this->reset_notices();
-
-		exit;
-	}
-
 	public function reset_notices() {
 		$notices = $this->notices + $this->sticky_notices;
 		foreach ( $notices as $id => $notice ) {

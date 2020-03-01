@@ -39,9 +39,11 @@ class Ajax {
 		$output['login'] = true;
 		$output['auth_url'] = Core::get_instance()->auth_url;
 		$output['auth_url'] = add_query_arg( array(
-			'site' => urlencode( site_url() ),
-			'r'    => urlencode( network_admin_url( 'admin.php?page=mts-connect' ) ),
+			'site' => rawurlencode( site_url() ),
+			'r'    => rawurlencode( network_admin_url( 'admin.php?page=mts-connect' ) ),
 		), $output['auth_url'] );
+
+		$output['auth_url'] = add_query_arg( 'mts_redirect_to', rawurlencode( $output['auth_url'] ), $output['auth_url'] );
 
 		echo wp_json_encode( $output );
 		exit;

@@ -711,7 +711,7 @@ class Core {
 	 *
 	 * @return array New headers.
 	 */
-	public function mts_product_type_extra_header( $headers ) {
+	public static function mts_product_type_extra_header( $headers ) {
 		$headers[] = 'MTS Product Type';
 		return $headers;
 	}
@@ -732,10 +732,10 @@ class Core {
 
 	/**
 	 * Handler for deleted_plugin hook.
-	 * 
+	 *
 	 * @param string $plugin_file Path to the plugin file relative to the plugins directory.
 	 * @param bool   $deleted     Whether the plugin deletion was successful.
-	 * 
+	 *
 	 * @return void
 	 */
 	public function deleted_plugin( $plugin_file, $deleted ) {
@@ -749,9 +749,9 @@ class Core {
 	 */
 	public static function has_premium_mts_products() {
 		$is_free = true;
-		add_filter( 'extra_theme_headers', array( $this, 'mts_product_type_extra_header' ) );
+		add_filter( 'extra_theme_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 		$themes = \wp_get_themes();
-		remove_filter( 'extra_theme_headers', array( $this, 'mts_product_type_extra_header' ) );
+		remove_filter( 'extra_theme_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 		foreach ( $themes as $slug => $theme ) {
 			$product_type = $theme->get('MTS Product Type');
 			if ( mb_strtolower( $product_type ) == 'premium' ) {
@@ -764,9 +764,9 @@ class Core {
 			if ( ! function_exists( 'get_plugins' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			}
-			add_filter( 'extra_plugin_headers', array( $this, 'mts_product_type_extra_header' ) );
+			add_filter( 'extra_plugin_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 			$plugins = \get_plugins();
-			remove_filter( 'extra_plugin_headers', array( $this, 'mts_product_type_extra_header' ) );
+			remove_filter( 'extra_plugin_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 			foreach ( $plugins as $slug => $plugin ) {
 				$product_type = isset( $plugin['MTS Product Type'] ) ? $plugin['MTS Product Type'] : '';
 				if ( mb_strtolower( $product_type ) == 'premium' ) {

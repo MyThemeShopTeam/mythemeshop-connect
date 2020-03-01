@@ -423,77 +423,77 @@ class Compatibility {
 	 * @return void
 	 */
 	public function check_for_mts_plugins() {
-        if ( ! function_exists( 'get_plugins' ) ) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-        $active_plugins = get_option( 'active_plugins', array() );
-        $all_plugins = get_plugins( '' );
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		$active_plugins = get_option( 'active_plugins', array() );
 
-        $hash = substr( md5( serialize( $active_plugins ) ), 0, 8 );
-        $opt = get_option( 'mts_plugins_active', false );
-        if ( $opt !== false ) {
-            $stored_hash = substr( $opt, 0, 8 );
-            if ( $hash == $stored_hash ) {
-                // No change in the list of plugins
-                $this->mts_plugins_in_use = (int) substr( $opt, 9 );
-                return;
-            }
-        }
+		$hash = substr( md5( serialize( $active_plugins ) ), 0, 8 ); // phpcs:ignore
+		$opt  = get_option( 'mts_plugins_active', false );
+		if ( $opt !== false ) {
+			$stored_hash = substr( $opt, 0, 8 );
+			if ( $hash == $stored_hash ) {
+				// No change in the list of plugins
+				$this->mts_plugins_in_use = (int) substr( $opt, 9 );
+				return;
+			}
+		}
 
-        foreach ( $active_plugins as $plugin_file ) {
-            if ( $plugin_file == MTS_CONNECT_PLUGIN_FILE ) {
-                continue;
-            }
-            if ( isset( $all_plugins[$plugin_file] ) && isset( $all_plugins[$plugin_file]['Author'] ) && stripos( $all_plugins[$plugin_file]['Author'], 'MyThemeShop' ) !== false ) {
-                $this->mts_plugins_in_use++;
-            }
-        }
+		$all_plugins = get_plugins( '' );
+		foreach ( $active_plugins as $plugin_file ) {
+			if ( $plugin_file == MTS_CONNECT_PLUGIN_FILE ) {
+				continue;
+			}
+			if ( isset( $all_plugins[ $plugin_file ] ) && isset( $all_plugins[ $plugin_file ]['Author'] ) && stripos( $all_plugins[ $plugin_file ]['Author'], 'MyThemeShop' ) !== false ) {
+				$this->mts_plugins_in_use++;
+			}
+		}
 
-        update_option( 'mts_plugins_active', $hash . '-' . $this->mts_plugins_in_use );
-        return;
+		update_option( 'mts_plugins_active', $hash . '-' . $this->mts_plugins_in_use );
+		return;
 
-    }
+	}
 
-    /**
+	/**
 	 * Check if we are using a MTS theme and store it in an option row.
 	 *
 	 * @return void
 	 */
-    public function check_for_mts_theme() {
-        // Check for mts_theme once.
-        if ( ( $stored = get_option( 'mts_theme_active', false ) ) !== false ) {
-            $this->mts_theme_in_use = ( $stored === '1' );
-            return;
-        }
+	public function check_for_mts_theme() {
+		// Check for mts_theme once.
+		if ( ( $stored = get_option( 'mts_theme_active', false ) ) !== false ) {
+			$this->mts_theme_in_use = ( $stored === '1' );
+			return;
+		}
 
-        $theme = wp_get_theme();
-        $author = $theme->get('Author');
-        if ( stripos( $author, 'MyThemeShop' ) !== false ) {
-            $this->mts_theme_in_use = true;
-            update_option( 'mts_theme_active', '1' );
-            return;
-        }
-        
-        // Also check parent
-        if ( $theme->parent() ) {
-            $parent_author = $theme->parent()->get('Author');
-            if ( stripos( $parent_author, 'MyThemeShop' ) !== false ) {
-                $this->mts_theme_in_use = true;
-                update_option( 'mts_theme_active', '1' );
-                return;
-            }
-        }
+		$theme  = wp_get_theme();
+		$author = $theme->get( 'Author' );
+		if ( stripos( $author, 'MyThemeShop' ) !== false ) {
+			$this->mts_theme_in_use = true;
+			update_option( 'mts_theme_active', '1' );
+			return;
+		}
 
-        update_option( 'mts_theme_active', '0' );
-        return;
-    }
+		// Also check parent.
+		if ( $theme->parent() ) {
+			$parent_author = $theme->parent()->get( 'Author' );
+			if ( stripos( $parent_author, 'MyThemeShop' ) !== false ) {
+				$this->mts_theme_in_use = true;
+				update_option( 'mts_theme_active', '1' );
+				return;
+			}
+		}
 
-    /**
+		update_option( 'mts_theme_active', '0' );
+		return;
+	}
+
+	/**
 	 * Clear option that stores if we are using a MTS theme.
 	 *
 	 * @return void
 	 */
-    public function clear_theme_check() {
-        delete_option( 'mts_theme_active' );
-    }
+	public function clear_theme_check() {
+		delete_option( 'mts_theme_active' );
+	}
 }

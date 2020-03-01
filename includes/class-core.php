@@ -118,8 +118,12 @@ class Core {
 		add_filter( 'wp_prepare_themes_for_js', array( $this, 'brand_theme_updates' ), 21 );
 		add_action( 'after_plugin_row_' . MTS_CONNECT_PLUGIN_FILE, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 		add_action( 'admin_init', array( $this, 'handle_connect' ), 10, 2 );
+
 		add_action( 'upgrader_process_complete', array( $this, 'upgrader_process_complete' ), 10, 1 );
-		add_action( 'deleted_plugin', array( $this, 'deleted_plugin' ), 10, 2 );
+		add_action( 'deleted_plugin', array( $this, 'has_premium_mts_products' ), 10, 2 );
+		add_action( 'switch_theme', array( $this, 'has_premium_mts_products' ), 10, 3 );
+		add_action( 'activated_plugin', array( $this, 'has_premium_mts_products' ), 10, 2 );
+		add_action( 'deactivated_plugin', array( $this, 'has_premium_mts_products' ), 10, 2 );
 	}
 
 	/**
@@ -727,18 +731,6 @@ class Core {
 		if ( ! is_a( $upgrader_instance, 'Theme_Upgrader' ) && ! is_a( $upgrader_instance, 'Plugin_Upgrader' ) ) {
 			return;
 		}
-		$this->has_premium_mts_products();
-	}
-
-	/**
-	 * Handler for deleted_plugin hook.
-	 *
-	 * @param string $plugin_file Path to the plugin file relative to the plugins directory.
-	 * @param bool   $deleted     Whether the plugin deletion was successful.
-	 *
-	 * @return void
-	 */
-	public function deleted_plugin( $plugin_file, $deleted ) {
 		$this->has_premium_mts_products();
 	}
 

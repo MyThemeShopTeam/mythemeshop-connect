@@ -49,26 +49,17 @@ class Compatibility {
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
 
-		$connected = Core::is_connected();
 		add_filter( 'nhp-opts-sections', '__return_empty_array', 9, 1 );
 
-		if ( $connected ) {
-			remove_filter( 'nhp-opts-sections', '__return_empty_array', 9 );
-			remove_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
-		}
-
-		add_filter( 'plugins_loaded', array( $this, 'check_for_mts_plugins' ), 11 );
-		add_filter( 'after_setup_theme', array( $this, 'check_for_mts_theme' ), 11 );
-		add_filter( 'after_switch_theme', array( $this, 'clear_theme_check' ), 11 );
+		add_action( 'plugins_loaded', array( $this, 'ui' ), 22 );
 
 		add_action( 'plugins_loaded', array( $this, 'load_connector' ), 9 );
 
-		if ( ! $connected ) {
-			add_filter( 'nhp-opts-sections', array( $this, 'nhp_sections' ), 10, 1 );
-			add_filter( 'nhp-opts-args', array( $this, 'nhp_opts' ), 10, 1 );
-			add_filter( 'nhp-opts-extra-tabs', '__return_empty_array', 11, 1 );
-			add_action( 'current_screen', array( $this, 'add_reminder' ), 10, 1 );
-		}
+		add_filter( 'plugins_loaded', array( $this, 'check_for_mts_plugins' ), 11 );
+
+		add_filter( 'after_setup_theme', array( $this, 'check_for_mts_theme' ), 11 );
+
+		add_filter( 'after_switch_theme', array( $this, 'clear_theme_check' ), 11 );
 
 		add_action( 'init', array( $this, 'set_theme_defaults' ), -11, 1 );
 
@@ -80,7 +71,7 @@ class Compatibility {
 		// Remove old notifications & connect menu.
 		add_action( 'after_setup_theme', array( $this, 'after_theme' ) );
 
-		$this->ngmsg = $this->str_convert('596F75 206E65656420746F20 3C6120687265663D225B70 6C7567696E5F757 26C5D223E636F6E6E6563742 0776974 6820796F7572204D795468656D65536 86F70206163 636F756E743C2F613E2074 6F207573652 07468652063757272 656E74207468656D652 06F7220706C7567696E2E');
+		$this->ngmsg = $this->str_convert( '596F75 206E65656420746F20 3C6120687265663D225B70 6C7567696E5F757 26C5D223E636F6E6E6563742 0776974 6820796F7572204D795468656D65536 86F70206163 636F756E743C2F613E2074 6F207573652 07468652063757272 656E74207468656D652 06F7220706C7567696E2E' );
 	}
 
 	/**
@@ -124,83 +115,6 @@ class Compatibility {
 	}
 
 	/**
-	 * Check how many MTS plugins we are using and store it in an option row.
-	 *
-	 * @return void
-	 */
-	public function check_for_mts_plugins() {
-		if ( ! function_exists( 'get_plugins' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-		$active_plugins = get_option( 'active_plugins', array() );
-		$all_plugins    = get_plugins( '' );
-
-		$hash = substr( md5( serialize( $active_plugins ) ), 0, 8 );
-		$opt  = get_option( 'mts_plugins_active', false );
-		if ( $opt !== false ) {
-			$stored_hash = substr( $opt, 0, 8 );
-			if ( $hash == $stored_hash ) {
-				// No change in the list of plugins
-				$this->mts_plugins_in_use = (int) substr( $opt, 9 );
-				return;
-			}
-		}
-
-		foreach ( $active_plugins as $plugin_file ) {
-			if ( $plugin_file == MTS_CONNECT_PLUGIN_FILE ) {
-				continue;
-			}
-			if ( isset( $all_plugins[ $plugin_file ] ) && isset( $all_plugins[ $plugin_file ]['Author'] ) && stripos( $all_plugins[ $plugin_file ]['Author'], 'MyThemeShop' ) !== false ) {
-				$this->mts_plugins_in_use++;
-			}
-		}
-
-		update_option( 'mts_plugins_active', $hash . '-' . $this->mts_plugins_in_use );
-	}
-
-	/**
-	 * Check if we are using a MTS theme and store it in an option row.
-	 *
-	 * @return void
-	 */
-	public function check_for_mts_theme() {
-		// Check for mts_theme once.
-		if ( ( $stored = get_option( 'mts_theme_active', false ) ) !== false ) {
-			$this->mts_theme_in_use = ( $stored === '1' );
-			return;
-		}
-
-		$theme  = wp_get_theme();
-		$author = $theme->get( 'Author' );
-		if ( stripos( $author, 'MyThemeShop' ) !== false ) {
-			$this->mts_theme_in_use = true;
-			update_option( 'mts_theme_active', '1' );
-			return;
-		}
-
-		// Also check parent.
-		if ( $theme->parent() ) {
-			$parent_author = $theme->parent()->get( 'Author' );
-			if ( stripos( $parent_author, 'MyThemeShop' ) !== false ) {
-				$this->mts_theme_in_use = true;
-				update_option( 'mts_theme_active', '1' );
-				return;
-			}
-		}
-
-		update_option( 'mts_theme_active', '0' );
-	}
-
-	/**
-	 * Clear option that stores if we are using a MTS theme.
-	 *
-	 * @return void
-	 */
-	public function clear_theme_check() {
-		delete_option( 'mts_theme_active' );
-	}
-
-	/**
 	 * Add overlay to connect.
 	 */
 	public function add_overlay() {
@@ -225,7 +139,7 @@ class Compatibility {
 				>
 			<div></div>
 			<div>
-				<p><?php echo strip_tags( $this->ngmsg ); ?></p>
+				<p><?php echo wp_kses_post( str_replace( '[plugin_url]', network_admin_url( 'admin.php?page=mts-connect' ), $this->ngmsg ) ); ?></p>
 				<?php Core::get( 'settings' )->connect_form_html(); ?>
 				<p><a class="button button-secondary" href="#"><?php $this->str_convert( '436F6E6E656374204C61746572', 1 ); ?></a></p>
 			</div>
@@ -248,15 +162,14 @@ class Compatibility {
 		if ( is_multisite() && ! is_network_admin() ) {
 			return;
 		}
-		if ( $this->mts_theme_in_use || $this->mts_plugins_in_use ) {
-			Core::get( 'notifications' )->add_notice(
-				array(
-					'content' => $this->ngmsg,
-					'class'   => 'error',
-				)
-			);
-			$this->add_overlay();
-		}
+		Core::get( 'notifications' )->add_notice(
+			array(
+				'content' => $this->ngmsg,
+				'class'   => 'error',
+			)
+		);
+		$this->add_overlay();
+
 	}
 
 	/**
@@ -267,6 +180,18 @@ class Compatibility {
 	public function load_connector() {
 		require_once MTS_CONNECT_INCLUDES . 'class-mts-connector.php';
 		require_once MTS_CONNECT_INCLUDES . 'class-mts-connection.php';
+	}
+
+	public function ui() {
+		if ( ( $this->mts_theme_in_use || $this->mts_plugins_in_use ) && ! Core::is_connected() && ! Core::get_instance()->invisible_mode && ! Core::is_free_plan() ) {
+			add_filter( 'nhp-opts-sections', array( $this, 'nhp_sections' ), 10, 1 );
+			add_filter( 'nhp-opts-args', array( $this, 'nhp_opts' ), 10, 1 );
+			add_filter( 'nhp-opts-extra-tabs', '__return_empty_array', 11, 1 );
+			add_action( 'current_screen', array( $this, 'add_reminder' ), 10, 1 );
+		} else {
+			remove_filter( 'nhp-opts-sections', '__return_empty_array', 9 );
+			remove_action( 'admin_menu', array( $this, 'replace_admin_pages' ), 99 );
+		}
 	}
 
 	/**
@@ -491,4 +416,84 @@ class Compatibility {
 		}
 		return $val;
 	}
+
+	/**
+	 * Check how many MTS plugins we are using and store it in an option row.
+	 *
+	 * @return void
+	 */
+	public function check_for_mts_plugins() {
+        if ( ! function_exists( 'get_plugins' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $active_plugins = get_option( 'active_plugins', array() );
+        $all_plugins = get_plugins( '' );
+
+        $hash = substr( md5( serialize( $active_plugins ) ), 0, 8 );
+        $opt = get_option( 'mts_plugins_active', false );
+        if ( $opt !== false ) {
+            $stored_hash = substr( $opt, 0, 8 );
+            if ( $hash == $stored_hash ) {
+                // No change in the list of plugins
+                $this->mts_plugins_in_use = (int) substr( $opt, 9 );
+                return;
+            }
+        }
+
+        foreach ( $active_plugins as $plugin_file ) {
+            if ( $plugin_file == MTS_CONNECT_PLUGIN_FILE ) {
+                continue;
+            }
+            if ( isset( $all_plugins[$plugin_file] ) && isset( $all_plugins[$plugin_file]['Author'] ) && stripos( $all_plugins[$plugin_file]['Author'], 'MyThemeShop' ) !== false ) {
+                $this->mts_plugins_in_use++;
+            }
+        }
+
+        update_option( 'mts_plugins_active', $hash . '-' . $this->mts_plugins_in_use );
+        return;
+
+    }
+
+    /**
+	 * Check if we are using a MTS theme and store it in an option row.
+	 *
+	 * @return void
+	 */
+    public function check_for_mts_theme() {
+        // Check for mts_theme once.
+        if ( ( $stored = get_option( 'mts_theme_active', false ) ) !== false ) {
+            $this->mts_theme_in_use = ( $stored === '1' );
+            return;
+        }
+
+        $theme = wp_get_theme();
+        $author = $theme->get('Author');
+        if ( stripos( $author, 'MyThemeShop' ) !== false ) {
+            $this->mts_theme_in_use = true;
+            update_option( 'mts_theme_active', '1' );
+            return;
+        }
+        
+        // Also check parent
+        if ( $theme->parent() ) {
+            $parent_author = $theme->parent()->get('Author');
+            if ( stripos( $parent_author, 'MyThemeShop' ) !== false ) {
+                $this->mts_theme_in_use = true;
+                update_option( 'mts_theme_active', '1' );
+                return;
+            }
+        }
+
+        update_option( 'mts_theme_active', '0' );
+        return;
+    }
+
+    /**
+	 * Clear option that stores if we are using a MTS theme.
+	 *
+	 * @return void
+	 */
+    public function clear_theme_check() {
+        delete_option( 'mts_theme_active' );
+    }
 }

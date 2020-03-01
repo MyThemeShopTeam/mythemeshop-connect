@@ -36,8 +36,22 @@ define( 'MTS_CONNECT_ASSETS', MTS_CONNECT_URI . 'assets/' );
 /* We're here. */
 define( 'MTS_CONNECT_ACTIVE', true );
 
-/* Require main class */
+/* Dependencies. */
+$files = array(
+	'ajax',
+	'checker',
+	'compatibility',
+	'notifications',
+	'plugin-checker',
+	'settings',
+	'theme-checker',
+);
+foreach ( $files as $file ) {
+	require_once MTS_CONNECT_INCLUDES . 'class-' . $file . '.php';
+}
+
+/* Require main class. */
 require_once MTS_CONNECT_INCLUDES . 'class-core.php';
 
-/* Run plugin */
+/* Run plugin. */
 $mts_connection = Core::get_instance();

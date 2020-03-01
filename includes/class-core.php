@@ -91,26 +91,18 @@ class Core {
 	 * Constructor.
 	 */
 	private function __construct() {
-		$files = array(
-			'class-ajax.php',
-			'class-checker.php',
-			'class-compatibility.php',
-			'class-notifications.php',
-			'class-plugin-checker.php',
-			'class-settings.php',
-			'class-theme-checker.php',
-		);
-
-		foreach ( $files as $file ) {
-			require_once MTS_CONNECT_INCLUDES . $file;
-		}
-
 		$this->init_controllers();
 
-		$this->connect_data   = $this->get_data();
-		$this->settings       = $this->get_settings();
-		$this->invisible_mode = apply_filters( 'mts_connect_invisible_mode', $this->is_free_plan() );
-		$connected            = ( ! empty( $this->connect_data['connected'] ) );
+		$this->connect_data = $this->get_data();
+		$this->settings     = $this->get_settings();
+		$connected          = ( ! empty( $this->connect_data['connected'] ) );
+
+		$this->invisible_mode = $this->is_free_plan();
+		if ( $connected ) {
+			$this->invisible_mode = false;
+		}
+		$this->invisible_mode = apply_filters( 'mts_connect_invisible_mode', $this->invisible_mode );
+
 		add_action( 'load-themes.php', array( $this, 'maybe_force_check' ), 9 );
 		add_action( 'load-plugins.php', array( $this, 'maybe_force_check' ), 9 );
 		add_action( 'load-update-core.php', array( $this, 'maybe_force_check' ), 9 );
@@ -126,7 +118,8 @@ class Core {
 		add_filter( 'wp_prepare_themes_for_js', array( $this, 'brand_theme_updates' ), 21 );
 		add_action( 'after_plugin_row_' . MTS_CONNECT_PLUGIN_FILE, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
 		add_action( 'admin_init', array( $this, 'handle_connect' ), 10, 2 );
-		add_action( 'upgrader_process_complete', array( $this, 'has_premium_mts_products' ), 10, 1 );
+		add_action( 'upgrader_process_complete', array( $this, 'upgrader_process_complete' ), 10, 1 );
+		add_action( 'deleted_plugin', array( $this, 'deleted_plugin' ), 10, 2 );
 	}
 
 	/**
@@ -525,7 +518,6 @@ class Core {
 		// Get plugin updates which user has no access to
 		$plugins_noaccess_transient = get_site_transient( 'mts_update_plugins_no_access' );
 		if ( is_object( $plugins_noaccess_transient ) && ! empty( $plugins_noaccess_transient->response ) ) {
-			// print_r($plugins_noaccess_transient->response);die();
 			foreach ( $plugins_noaccess_transient->response as $plugin_slug => $plugin_data ) {
 				add_action( 'after_plugin_row_' . $plugin_slug, array( $this, 'brand_updates_plugin_row' ), 9, 3 );
 			}
@@ -725,16 +717,37 @@ class Core {
 	}
 
 	/**
-	 * Check if we're using any MTS Premium product.
+	 * Handler for upgrader_process_complete hook, i.e. this runs after a theme/plugin install.
 	 *
-	 * @param  mixed $upgrader_instance WP_Upgrader or similar object instance when called from 'upgrader_process_complete' hook.
+	 * @param  object $upgrader_instance WP_Upgrader or similar object instance.
+	 *
+	 * @return void
+	 */
+	public function upgrader_process_complete( $upgrader_instance ) {
+		if ( ! is_a( $upgrader_instance, 'Theme_Upgrader' ) && ! is_a( $upgrader_instance, 'Plugin_Upgrader' ) ) {
+			return;
+		}
+		$this->has_premium_mts_products();
+	}
+
+	/**
+	 * Handler for deleted_plugin hook.
+	 * 
+	 * @param string $plugin_file Path to the plugin file relative to the plugins directory.
+	 * @param bool   $deleted     Whether the plugin deletion was successful.
+	 * 
+	 * @return void
+	 */
+	public function deleted_plugin( $plugin_file, $deleted ) {
+		$this->has_premium_mts_products();
+	}
+
+	/**
+	 * Check if we're using any MTS Premium product.
 	 *
 	 * @return bool Whether we're only using free products.
 	 */
-	public function has_premium_mts_products( $upgrader_instance = false ) {
-		if ( $upgrader_instance && ! is_a( $upgrader_instance, 'Theme_Upgrader' ) && ! is_a( $upgrader_instance, 'Theme_Upgrader' ) ) {
-			return;
-		}
+	public static function has_premium_mts_products() {
 		$is_free = true;
 		add_filter( 'extra_theme_headers', array( $this, 'mts_product_type_extra_header' ) );
 		$themes = \wp_get_themes();
@@ -773,13 +786,13 @@ class Core {
 	 *
 	 * @return boolean Whether we are using free products only.
 	 */
-	public function is_free_plan() {
+	public static function is_free_plan() {
 		$stored = get_option( 'mts_free_plan', false );
 		if ( $stored !== false ) {
 			return (bool) $stored;
 		}
 
-		$is_free = ! $this->has_premium_mts_products();
+		$is_free = ! self::has_premium_mts_products();
 		return $is_free;
 	}
 

@@ -103,22 +103,36 @@ class Core {
 		}
 		$this->invisible_mode = apply_filters( 'mts_connect_invisible_mode', $this->invisible_mode );
 
+		// Activate & deactivate callbacks.
+		register_activation_hook( __FILE__, array( $this, 'plugin_activated' ) );
+		register_deactivation_hook( __FILE__, array( $this, 'plugin_deactivated' ) );
+
+		// "MTS Product Type" header for themes and plugins.
+		add_filter( 'extra_theme_headers', array( $this, 'mts_product_type_extra_header' ) );
+		add_filter( 'extra_plugin_headers', array( $this, 'mts_product_type_extra_header' ) );
+
+		// Check for updates on page load when force-check param is set.
 		add_action( 'load-themes.php', array( $this, 'maybe_force_check' ), 9 );
 		add_action( 'load-plugins.php', array( $this, 'maybe_force_check' ), 9 );
 		add_action( 'load-update-core.php', array( $this, 'maybe_force_check' ), 9 );
-		register_activation_hook( __FILE__, array( $this, 'plugin_activated' ) );
-		register_deactivation_hook( __FILE__, array( $this, 'plugin_deactivated' ) );
+
 		// Localization.
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
+
 		// Override plugin info page with changelog.
 		add_action( 'install_plugins_pre_plugin-information', array( $this, 'install_plugin_information' ) );
+
+		// Brand admin pages.
 		add_action( 'load-plugins.php', array( $this, 'brand_updates_table' ), 21 );
 		add_action( 'core_upgrade_preamble', array( $this, 'brand_updates_page' ), 21 );
 		add_action( 'admin_print_scripts-plugins.php', array( $this, 'updates_table_custom_js' ) );
 		add_filter( 'wp_prepare_themes_for_js', array( $this, 'brand_theme_updates' ), 21 );
 		add_action( 'after_plugin_row_' . MTS_CONNECT_PLUGIN_FILE, array( $this, 'plugin_row_deactivate_notice' ), 10, 2 );
+
+		// After connect.
 		add_action( 'admin_init', array( $this, 'handle_connect' ), 10, 2 );
 
+		// Re-check themes and plugins for MTS products.
 		add_action( 'upgrader_process_complete', array( $this, 'upgrader_process_complete' ), 10, 1 );
 		add_action( 'deleted_plugin', array( $this, 'has_premium_mts_products' ), 10, 2 );
 		add_action( 'switch_theme', array( $this, 'has_premium_mts_products' ), 10, 3 );
@@ -193,6 +207,16 @@ class Core {
 	 * @return void
 	 */
 	public function plugin_activated() {
+		// Make sure our filters are in place.
+		add_filter( 'extra_theme_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
+		add_filter( 'extra_plugin_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
+		
+		// Clean caches.
+		wp_clean_themes_cache();
+		wp_cache_delete( 'plugins', 'plugins' );
+		
+		// Do checks.
+		self::has_premium_mts_products();
 		self::get( 'theme_checker' )->update_themes_now();
 		self::get( 'plugin_checker' )->update_plugins_now();
 	}
@@ -741,9 +765,7 @@ class Core {
 	 */
 	public static function has_premium_mts_products() {
 		$is_free = true;
-		add_filter( 'extra_theme_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 		$themes = \wp_get_themes();
-		remove_filter( 'extra_theme_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 		foreach ( $themes as $slug => $theme ) {
 			$product_type = $theme->get('MTS Product Type');
 			if ( mb_strtolower( $product_type ) == 'premium' ) {
@@ -756,9 +778,7 @@ class Core {
 			if ( ! function_exists( 'get_plugins' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			}
-			add_filter( 'extra_plugin_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 			$plugins = \get_plugins();
-			remove_filter( 'extra_plugin_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 			foreach ( $plugins as $slug => $plugin ) {
 				$product_type = isset( $plugin['MTS Product Type'] ) ? $plugin['MTS Product Type'] : '';
 				if ( mb_strtolower( $product_type ) == 'premium' ) {

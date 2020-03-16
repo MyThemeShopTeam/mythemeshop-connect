@@ -53,5 +53,8 @@ foreach ( $files as $file ) {
 /* Require main class. */
 require_once MTS_CONNECT_INCLUDES . 'class-core.php';
 
-/* Run plugin. */
-$mts_connection = Core::get_instance();
+/* Hook init. */
+add_action( 'plugins_loaded', 'mythemeshop_connect_init' );
+function mythemeshop_connect_init() {
+	$mts_connection = Core::get_instance();
+}

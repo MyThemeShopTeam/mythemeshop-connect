@@ -208,50 +208,52 @@ class Settings {
 			<div id="mtsc-tabs">
 				<div id="mtsc-connect">
 					<?php if ( ! Core::is_connected() ) { ?>
-						<?php if ( isset( $_GET['mythemeshop_connect_status'] ) ) { ?>
-							<?php $this->connect_data_html(); ?>
-						<?php } else { ?>
-							<?php $this->connect_form_html(); ?>
-						<?php } ?>
+						<?php $this->connect_form_html(); ?>
 					<?php } else { ?>
 						<div id="mtsc-connected">
 							<?php $this->logo_html(); ?>
+							<?php if ( isset( $_GET['mythemeshop_connect_status'] ) ) { ?>
+								<div class="mtsc-connected">
+									<p><?php _e( 'Connection successful. Please wait while we check for updates...', 'mythemeshop-connect' ); ?></p>
+									<?php $this->connect_data_html(); ?>
+								</div>
+							<?php } else { ?>
+								<div class="mtsc-updates-status">
+									<?php if ( $updates_required ) { ?>
+										<div class="mtsc-status-icon mtsc-icon-updates-required">
+											<span class="dashicons dashicons-no-alt"></span>
+										</div>
+										<div class="mtsc-status-text">
+											<?php if ( $theme_updates_required && $plugin_updates_required ) { ?>
+												<p><?php printf( __( 'Your themes and plugins are outdated. Please navigate to %s to get the latest versions.', 'mythemeshop-connect' ), '<a href="' . network_admin_url( 'update-core.php' ) . '">' . __( 'the Updates page', 'mythemeshop-connect' ) . '</a>' ); ?></p>
+											<?php } elseif ( $theme_updates_required ) { ?>
+												<p><?php printf( __( 'One or more themes are outdated. Please navigate to %s to get the latest versions.', 'mythemeshop-connect' ), '<a href="' . network_admin_url( 'update-core.php' ) . '">' . __( 'the Updates page', 'mythemeshop-connect' ) . '</a>' ); ?></p>
+											<?php } elseif ( $plugin_updates_required ) { ?>
+												<p><?php printf( __( 'One or more plugins are outdated. Please navigate to %s to get the latest versions.', 'mythemeshop-connect' ), '<a href="' . network_admin_url( 'update-core.php' ) . '">' . __( 'the Updates page', 'mythemeshop-connect' ) . '</a>' ); ?></p>
+											<?php } ?>
+										</div>
+									<?php } else { ?>
+										<div class="mtsc-status-icon mtsc-icon-no-updates-required">
+											<span class="dashicons dashicons-yes"></span>
+										</div>
+										<div class="mtsc-status-text">
+											<p><?php _e( 'Your MyThemeShop themes and plugins are up to date.', 'mythemeshop-connect' ); ?></p>
+										</div>
+									<?php } ?>
+								</div>
 
-							<div class="mtsc-updates-status">
-								<?php if ( $updates_required ) { ?>
-									<div class="mtsc-status-icon mtsc-icon-updates-required">
-										<span class="dashicons dashicons-no-alt"></span>
-									</div>
-									<div class="mtsc-status-text">
-										<?php if ( $theme_updates_required && $plugin_updates_required ) { ?>
-											<p><?php printf( __( 'Your themes and plugins are outdated. Please navigate to %s to get the latest versions.', 'mythemeshop-connect' ), '<a href="' . network_admin_url( 'update-core.php' ) . '">' . __( 'the Updates page', 'mythemeshop-connect' ) . '</a>' ); ?></p>
-										<?php } elseif ( $theme_updates_required ) { ?>
-											<p><?php printf( __( 'One or more themes are outdated. Please navigate to %s to get the latest versions.', 'mythemeshop-connect' ), '<a href="' . network_admin_url( 'update-core.php' ) . '">' . __( 'the Updates page', 'mythemeshop-connect' ) . '</a>' ); ?></p>
-										<?php } elseif ( $plugin_updates_required ) { ?>
-											<p><?php printf( __( 'One or more plugins are outdated. Please navigate to %s to get the latest versions.', 'mythemeshop-connect' ), '<a href="' . network_admin_url( 'update-core.php' ) . '">' . __( 'the Updates page', 'mythemeshop-connect' ) . '</a>' ); ?></p>
-										<?php } ?>
-									</div>
-								<?php } else { ?>
-									<div class="mtsc-status-icon mtsc-icon-no-updates-required">
-										<span class="dashicons dashicons-yes"></span>
-									</div>
-									<div class="mtsc-status-text">
-										<p><?php _e( 'Your themes and plugins are up to date.', 'mythemeshop-connect' ); ?></p>
-									</div>
-								<?php } ?>
-							</div>
-
-							<div class="mtsc-connected-msg">
-								<span class="mtsc-connected-msg-connected">
-									<?php _e( 'Connected', 'mythemeshop-connect' ); ?>
-								</span>
-								<span class="mtsc-connected-msg-username">
-									<?php printf( __( 'MyThemeShop username: %s', 'mythemeshop-connect' ), '<span class="mtsc-username">' . Core::get_instance()->connect_data['username'] . '</span>' ); ?>
-								</span>
-								<a href="<?php echo esc_url( add_query_arg( 'disconnect', '1' ) ); ?>" class="mtsc-connected-msg-disconnect">
-									<?php _e( 'Disconnect', 'mythemeshop-connect' ); ?>
-								</a>
-							</div>
+								<div class="mtsc-connected-msg">
+									<span class="mtsc-connected-msg-connected">
+										<?php _e( 'Connected', 'mythemeshop-connect' ); ?>
+									</span>
+									<span class="mtsc-connected-msg-username">
+										<?php printf( __( 'MyThemeShop username: %s', 'mythemeshop-connect' ), '<span class="mtsc-username">' . Core::get_instance()->connect_data['username'] . '</span>' ); ?>
+									</span>
+									<a href="<?php echo esc_url( add_query_arg( 'disconnect', '1' ) ); ?>" class="mtsc-connected-msg-disconnect">
+										<?php _e( 'Disconnect', 'mythemeshop-connect' ); ?>
+									</a>
+								</div>
+							<?php } ?>
 						</div>
 					<?php } ?>
 				</div>
@@ -322,7 +324,7 @@ class Settings {
 		<?php
 	}
 
-	public function connect_data_html() {
+	public function connect_data_html( $id = 'mts_connected_data' ) {
 		?>
 		<form action="<?php echo admin_url( 'admin-ajax.php' ); ?>" method="post" id="<?php echo esc_attr( $id ); ?>">
 			<input type="hidden" id="mts_connect_status" name="" value="<?php echo esc_attr( $_GET['mythemeshop_connect_status'] ); ?>">

@@ -103,34 +103,5 @@ jQuery(document).ready(function($) {
 				}
 			}
 		});
-
-		if ( $('#mts_connect_status').length ) {
-			var status = $('#mts_connect_status').val();
-			var $this = $(this).closest('form');
-			if ( status === 'success' ) {
-				// check_themes
-				$.get(ajaxurl, 'action=mts_connect_check_themes').done(function() {
-					$this.append(mtsconnect.l10n_ajax_theme_check_done);
-					setTimeout(function() {
-						// check_plugins
-						$.get(ajaxurl, 'action=mts_connect_check_plugins').done(function() {
-							$this.append(mtsconnect.l10n_ajax_plugin_check_done);
-							if ($('#mts-connect-modal').length) {
-								if (typeof mts_connect_refresh != 'undefined' && mts_connect_refresh === true) {
-									window.location.reload(true);
-									return;
-								}
-								$('#mts-connect-modal').remove();
-							} else {
-								$this.append(mtsconnect.l10n_ajax_refreshing);
-								setTimeout(function() {
-									window.location.href = mtsconnect.pluginurl + '&updated=1';
-								}, 100);
-							}
-						});
-					}, 1000);
-				});
-			}
-		}
 	});
 });

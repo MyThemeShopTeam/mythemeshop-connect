@@ -43,6 +43,11 @@ class Ajax {
 			'r'    => rawurlencode( network_admin_url( 'admin.php?page=mts-connect' ) ),
 		), $output['auth_url'] );
 
+		// Add the URL itself for the login redirect param.
+		$output['auth_url'] = add_query_arg( array(
+			'mts_redirect_to' => rawurlencode( $output['auth_url'] ),
+		), $output['auth_url'] );
+
 		$output['auth_url'] = add_query_arg( 'mts_redirect_to', rawurlencode( $output['auth_url'] ), $output['auth_url'] );
 
 		echo wp_json_encode( $output );

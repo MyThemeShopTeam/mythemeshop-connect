@@ -20,7 +20,7 @@ class Checker {
 	 *
 	 * @var object
 	 */
-	public $api_url = 'https://mtssta-5756.bolt72.servebolt.com/mtsapi/v1/';
+	public $api_url = 'https://mythemeshop.com/mtsapi/v1/';
 
 	/**
 	 * Dummy constructor method.

@@ -85,7 +85,7 @@ class Core {
 	 *
 	 * @var array
 	 */
-	public $auth_url = 'https://mtssta-5756.bolt72.servebolt.com/auth/';
+	public $auth_url = 'https://mythemeshop.com/auth/';
 
 	/**
 	 * Constructor.
@@ -210,11 +210,11 @@ class Core {
 		// Make sure our filters are in place.
 		add_filter( 'extra_theme_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
 		add_filter( 'extra_plugin_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
-		
+
 		// Clean caches.
 		wp_clean_themes_cache();
 		wp_cache_delete( 'plugins', 'plugins' );
-		
+
 		// Do checks.
 		self::has_premium_mts_products();
 		self::get( 'theme_checker' )->update_themes_now();

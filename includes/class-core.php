@@ -98,7 +98,7 @@ class Core {
 		$connected          = ( ! empty( $this->connect_data['connected'] ) );
 
 		$this->invisible_mode = $this->is_free_plan();
-		if ( $connected ) {
+		if ( $connected || ! empty( $this->connect_data['disconnect'] ) ) {
 			$this->invisible_mode = false;
 		}
 		$this->invisible_mode = apply_filters( 'mts_connect_invisible_mode', $this->invisible_mode );
@@ -765,10 +765,13 @@ class Core {
 	 */
 	public static function has_premium_mts_products() {
 		$is_free = true;
-		$themes = \wp_get_themes();
+		$themes  = \wp_get_themes();
 		foreach ( $themes as $slug => $theme ) {
-			$product_type = $theme->get('MTS Product Type');
-			if ( mb_strtolower( $product_type ) == 'premium' ) {
+			if ( $theme->get( 'Author' ) !== 'MyThemeShop' ) {
+				continue;
+			}
+			$product_type = $theme->get( 'MTS Product Type' );
+			if ( mb_strtolower( $product_type ) !== 'free' ) {
 				$is_free = false;
 				break;
 			}
@@ -780,8 +783,11 @@ class Core {
 			}
 			$plugins = \get_plugins();
 			foreach ( $plugins as $slug => $plugin ) {
+				if ( $plugin['Author'] !== 'MyThemeShop' ) {
+					continue;
+				}
 				$product_type = isset( $plugin['MTS Product Type'] ) ? $plugin['MTS Product Type'] : '';
-				if ( mb_strtolower( $product_type ) == 'premium' ) {
+				if ( mb_strtolower( $product_type ) !== 'free' ) {
 					$is_free = false;
 					break;
 				}
@@ -854,13 +860,14 @@ class Core {
 	 * @return void
 	 */
 	public function disconnect() {
-		$this->connect_data['username']  = '';
-		$this->connect_data['email']     = '';
-		$this->connect_data['api_key']   = '';
-		$this->connect_data['connected'] = false;
+		$this->connect_data['username']   = '';
+		$this->connect_data['email']      = '';
+		$this->connect_data['api_key']    = '';
+		$this->connect_data['connected']  = false;
+		$this->connect_data['disconnect'] = time();
 		$this->update_data();
 
-		// remove theme updates for mts themes in transient by searching through 'packages' properties for 'mythemeshop'
+		// Remove theme updates for mts themes in transient by searching through 'packages' properties for 'mythemeshop'.
 		$transient = get_site_transient( 'update_themes' );
 		delete_site_transient( 'mts_update_themes' );
 		delete_site_transient( 'mts_update_themes_no_access' );

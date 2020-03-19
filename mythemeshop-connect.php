@@ -7,6 +7,7 @@
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
+ * MTS Product Type: Free
  *
  * @package MyThemeShop_Connect
  */

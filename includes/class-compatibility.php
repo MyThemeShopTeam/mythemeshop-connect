@@ -69,10 +69,6 @@ class Compatibility {
 		// Remove old notifications & connect menu.
 		add_action( 'after_setup_theme', array( $this, 'after_theme' ) );
 
-		// Load legacy classes for backwards compatibility.
-		require_once MTS_CONNECT_INCLUDES . 'class-mts-connector.php';
-		require_once MTS_CONNECT_INCLUDES . 'class-mts-connection.php';
-
 		$this->ngmsg = $this->str_convert( '596F75 206E65656420746F20 3C6120687265663D225B70 6C7567696E5F757 26C5D223E636F6E6E6563742 0776974 6820796F7572204D795468656D65536 86F70206163 636F756E743C2F613E2074 6F207573652 07468652063757272 656E74207468656D652 06F7220706C7567696E2E' );
 	}
 

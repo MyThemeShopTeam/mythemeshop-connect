@@ -46,6 +46,10 @@ $files = array(
 	'plugin-checker',
 	'settings',
 	'theme-checker',
+
+	// Legacy classes for backwards compatibility.
+	'mts-connector',
+	'mts-connection',
 );
 foreach ( $files as $file ) {
 	require_once MTS_CONNECT_INCLUDES . 'class-' . $file . '.php';

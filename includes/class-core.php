@@ -98,6 +98,7 @@ class Core {
 		$connected          = ( ! empty( $this->connect_data['connected'] ) );
 
 		$this->invisible_mode = $this->is_free_plan();
+
 		if ( $connected || ! empty( $this->connect_data['disconnect'] ) ) {
 			$this->invisible_mode = false;
 		}
@@ -764,6 +765,10 @@ class Core {
 	 * @return bool Whether we're only using free products.
 	 */
 	public static function has_premium_mts_products() {
+		// Make sure our filters are in place.
+		add_filter( 'extra_theme_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
+		add_filter( 'extra_plugin_headers', array( 'MyThemeShop_Connect\\Core', 'mts_product_type_extra_header' ) );
+
 		$is_free = true;
 		$themes  = \wp_get_themes();
 		foreach ( $themes as $slug => $theme ) {

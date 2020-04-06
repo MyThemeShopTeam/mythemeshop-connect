@@ -1,7 +1,7 @@
-3.0 (Feb 29, 2020)
+3.0 (Apr 06, 2020)
 -----------------------------
-- New authentication flow
-- Code refactoring
+- Added new authentication flow, now you don't need to enter the login details again
+- Code optimization
 
 
 2.0.17 (Jul 26, 2019)

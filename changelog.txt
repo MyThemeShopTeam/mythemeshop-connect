@@ -1,3 +1,8 @@
+3.0.1 (Apr 06, 2020)
+-----------------------------
+- Fix for setups without mbstring library
+
+
 3.0 (Apr 06, 2020)
 -----------------------------
 - Added new authentication flow, now you don't need to enter the login details again

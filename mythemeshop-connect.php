@@ -3,7 +3,7 @@
  * Plugin Name: MyThemeShop Theme & Plugin Updater
  * Plugin URI: https://mythemeshop.com
  * Description: Update MyThemeShop themes & plugins right from your WordPress dashboard.
- * Version: 3.0
+ * Version: 3.0.1
  * Author: MyThemeShop
  * Author URI: https://mythemeshop.com
  * License: GPLv2
@@ -17,7 +17,7 @@ use MyThemeShop_Connect\Core;
 defined( 'ABSPATH' ) || die;
 
 /* Sets the plugin version constant. */
-define( 'MTS_CONNECT_VERSION', '3.0' );
+define( 'MTS_CONNECT_VERSION', '3.0.1' );
 
 /* Sets the plugin slug constant. */
 define( 'MTS_CONNECT_PLUGIN_FILE', 'mythemeshop-connect/mythemeshop-connect.php' );

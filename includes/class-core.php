@@ -776,7 +776,7 @@ class Core {
 				continue;
 			}
 			$product_type = $theme->get( 'MTS Product Type' );
-			if ( mb_strtolower( $product_type ) !== 'free' ) {
+			if ( $this->is_premium_type( $product_type ) ) {
 				$is_free = false;
 				break;
 			}
@@ -792,7 +792,7 @@ class Core {
 					continue;
 				}
 				$product_type = isset( $plugin['MTS Product Type'] ) ? $plugin['MTS Product Type'] : '';
-				if ( mb_strtolower( $product_type ) !== 'free' ) {
+				if ( $this->is_premium_type( $product_type ) ) {
 					$is_free = false;
 					break;
 				}
@@ -801,6 +801,13 @@ class Core {
 		update_option( 'mts_free_plan', (int) $is_free );
 
 		return $is_free;
+	}
+
+	public function is_premium_type( $product_type ) {
+		if ( function_exists( 'mb_strtolower' ) ) {
+			return mb_strtolower( $product_type ) !== 'free';
+		}
+		return strtolower( $product_type ) !== 'free';
 	}
 
 	/**

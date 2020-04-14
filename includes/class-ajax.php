@@ -114,7 +114,7 @@ class Ajax {
 	 *
 	 * @return void
 	 */
-	public function ajax_mts_connect_dismiss_notices() {
+	public function dismiss_notices() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
@@ -131,7 +131,7 @@ class Ajax {
 	 *
 	 * @return void
 	 */
-	public function ajax_mts_connect_reset_notices() {
+	public function reset_notices() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}

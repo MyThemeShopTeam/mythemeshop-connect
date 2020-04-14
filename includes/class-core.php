@@ -807,7 +807,7 @@ class Core {
 	 * Check if provided product type is NOT 'free'.
 	 *
 	 * @return boolean
-	 */ 
+	 */
 	public static function is_premium_type( $product_type ) {
 		if ( function_exists( 'mb_strtolower' ) ) {
 			return mb_strtolower( $product_type ) !== 'free';
@@ -840,7 +840,7 @@ class Core {
 		if ( isset( $_GET['mythemeshop_connect'] ) ) {
 			switch ( $_GET['mythemeshop_connect'] ) {
 				case 'ok':
-					$this->connect( json_decode( base64_decode( $_GET['mythemeshop_auth'] ), true ) );
+					$this->connect( json_decode( base64_decode( $_POST['mythemeshop_auth'] ), true ) );
 					break;
 
 				case 'banned':

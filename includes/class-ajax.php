@@ -46,9 +46,8 @@ class Ajax {
 		// Add the URL itself for the login redirect param.
 		$output['auth_url'] = add_query_arg( array(
 			'mts_redirect_to' => rawurlencode( $output['auth_url'] ),
+			'version' => MTS_CONNECT_VERSION,
 		), $output['auth_url'] );
-
-		$output['auth_url'] = add_query_arg( 'mts_redirect_to', rawurlencode( $output['auth_url'] ), $output['auth_url'] );
 
 		echo wp_json_encode( $output );
 		exit;
@@ -114,7 +113,7 @@ class Ajax {
 	 *
 	 * @return void
 	 */
-	public function ajax_mts_connect_dismiss_notices() {
+	public function dismiss_notices() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
@@ -131,7 +130,7 @@ class Ajax {
 	 *
 	 * @return void
 	 */
-	public function ajax_mts_connect_reset_notices() {
+	public function reset_notices() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}

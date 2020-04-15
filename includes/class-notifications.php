@@ -413,7 +413,8 @@ class Notifications {
 			}
 		}
 	}
-	private function dismiss_notice( $id ) {
+
+	public function dismiss_notice( $id ) {
 		global $current_user;
 		$user_id   = $current_user->ID;
 		$dismissed = get_user_meta( $user_id, $this->dismissed_meta, true );
@@ -426,7 +427,7 @@ class Notifications {
 		}
 	}
 
-	private function undismiss_notice( $id ) {
+	public function undismiss_notice( $id ) {
 		global $current_user;
 		$user_id   = $current_user->ID;
 		$dismissed = get_user_meta( $user_id, $this->dismissed_meta, true );
@@ -445,7 +446,6 @@ class Notifications {
 		}
 		return $a['priority'] - $b['priority'];
 	}
-
 
 	public function error_message( $msg ) {
 		$this->add_notice(

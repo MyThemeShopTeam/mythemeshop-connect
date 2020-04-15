@@ -837,6 +837,9 @@ class Core {
 	 * @return void
 	 */
 	public function handle_connect() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
 		if ( isset( $_GET['mythemeshop_connect'] ) ) {
 			switch ( $_GET['mythemeshop_connect'] ) {
 				case 'ok':

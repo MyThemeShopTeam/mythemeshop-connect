@@ -136,12 +136,6 @@ class Settings {
 	public function ui_onload() {
 		if ( isset( $_GET['disconnect'] ) && $_GET['disconnect'] == 1 ) {
 			Core::get_instance()->disconnect();
-			Core::get( 'notifications' )->add_notice(
-				array(
-					'content' => __( 'Disconnected.', 'mythemeshop-connect' ),
-					'class'   => 'error',
-				)
-			);
 		}
 		if ( isset( $_GET['reset_notices'] ) && $_GET['reset_notices'] == 1 ) {
 			Core::get( 'notifications' )->reset_notices();

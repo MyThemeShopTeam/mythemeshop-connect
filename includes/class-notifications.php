@@ -30,7 +30,7 @@ class Notifications {
 		// Notices default options
 		$this->notice_defaults = array(
 			'content'  => '',
-			'class'    => 'updated',
+			'class'    => 'updated notice-success',
 			'priority' => 10,
 			'sticky'   => false,
 			'date'     => time(),
@@ -392,7 +392,11 @@ class Notifications {
 				$notice['content'] = str_replace( $tag, $value, $notice['content'] );
 			}
 
-			echo '<div class="' . $notice['class'] . ( $notice['sticky'] ? ' mts-connect-sticky' : '' ) . ' mts-connect-notice" id="notice_' . $id . '">';
+			if ( strpos( $notice['class'], 'update-nag' ) !== false && strpos( $notice['class'], 'update-warning' ) === false ) {
+				$notice['class'] .= ' notice-warning';
+			}
+
+			echo '<div class="' . $notice['class'] . ( $notice['sticky'] ? ' mts-connect-sticky' : '' ) . ' mts-connect-notice notice" id="notice_' . $id . '">';
 			echo $notice['content'];
 			echo '<a href="' . esc_url( add_query_arg( 'mts_dismiss_notice', $id ) ) . '" class="dashicons dashicons-dismiss mts-notice-dismiss-icon" title="' . __( 'Dissmiss Notice' ) . '"></a>';
 			echo '<a href="' . esc_url( add_query_arg( 'mts_dismiss_notice', 'dismiss_all' ) ) . '" class="dashicons dashicons-dismiss mts-notice-dismiss-all-icon" title="' . __( 'Dissmiss All Notices' ) . '"></a>';
@@ -451,7 +455,7 @@ class Notifications {
 		$this->add_notice(
 			array(
 				'content' => $msg,
-				'class'   => 'error',
+				'class'   => 'error notice-error',
 			)
 		);
 	}

@@ -371,7 +371,7 @@ class Core {
 	 *
 	 * @return void
 	 */
-	protected function update_settings() {
+	public function update_settings() {
 		update_site_option( $this->settings_option, $this->settings );
 	}
 
@@ -843,7 +843,17 @@ class Core {
 		if ( isset( $_GET['mythemeshop_connect'] ) ) {
 			switch ( $_GET['mythemeshop_connect'] ) {
 				case 'ok':
-					$this->connect( json_decode( base64_decode( $_POST['mythemeshop_auth'] ), true ) );
+					$data = isset( $_POST['mythemeshop_auth'] ) ? json_decode( base64_decode( $_POST['mythemeshop_auth'] ), true ) : false;
+					if ( is_array( $data ) && ! empty( $data['username'] ) && ! empty( $data['email'] ) && ! empty( $data['api_key'] ) ) {
+						$this->connect( $data );
+					} else {
+						self::get( 'notifications' )->add_notice(
+							array(
+								'content' => __( 'Connection unsuccessful. Please try again.', 'mythemeshop-connect' ),
+								'class'   => 'error',
+							)
+						);
+					}
 					break;
 
 				case 'banned':
@@ -911,6 +921,9 @@ class Core {
 			set_site_transient( 'update_plugins', $transient );
 		}
 		self::get( 'notifications' )->reset_notices();
+
+		wp_safe_redirect( network_admin_url( 'admin.php?page=mts-connect' ) );
+		die();
 	}
 
 }

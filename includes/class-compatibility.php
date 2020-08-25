@@ -163,7 +163,7 @@ class Compatibility {
 		Core::get( 'notifications' )->add_notice(
 			array(
 				'content' => $this->ngmsg,
-				'class'   => 'error',
+				'class'   => 'error notice-error',
 			)
 		);
 		$this->add_overlay();

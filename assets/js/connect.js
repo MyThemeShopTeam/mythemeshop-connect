@@ -31,6 +31,7 @@ jQuery(document).ready(function($) {
 	$('#mts_connect_settings_form').submit(function(e) {
 		e.preventDefault();
 		var $this = $(this);
+		var hideNotices = ! $('#mtsc-label-updatenotices input').is(':checked');
 		$.ajax({
 			url: ajaxurl,
 			method: 'post',
@@ -40,6 +41,9 @@ jQuery(document).ready(function($) {
 			},
 			success: function(data) {
 				$this.removeClass('loading');
+				if ( hideNotices ) {
+					$('.mts-connect-notice').hide();
+				}
 			}
 		});
 	});

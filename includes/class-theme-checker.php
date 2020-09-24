@@ -159,7 +159,7 @@ class Theme_Checker extends Checker {
 				}
 
 				if ( ! empty( $theme_response['disconnect'] ) ) {
-					$this->disconnect();
+					Core::get_instance()->disconnect();
 				}
 			}
 		}

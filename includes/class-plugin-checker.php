@@ -170,7 +170,7 @@ class Plugin_Checker extends Checker {
 				}
 
 				if ( ! empty( $plugin_response['disconnect'] ) ) {
-					$this->disconnect();
+					Core::get_instance()->disconnect();
 				}
 			}
 		}

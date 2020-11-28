@@ -1,3 +1,8 @@
+3.0.6 (Nov 28, 2020)
+-----------------------------
+- Fix conflict with Rank Math plugin
+
+
 3.0.5 (Sep 24, 2020)
 -----------------------------
 - Fixed error: call to undefined method

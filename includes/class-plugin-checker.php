@@ -32,6 +32,8 @@ class Plugin_Checker extends Checker {
 
 
 	public function check_plugin_updates( $update_transient ) {
+		remove_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_plugin_updates' ) );
+
 		global $wp_version;
 
 		if ( ! isset( $update_transient->checked ) ) {

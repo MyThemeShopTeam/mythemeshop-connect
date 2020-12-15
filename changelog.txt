@@ -1,3 +1,8 @@
+3.0.7 (Dec 15, 2020)
+-----------------------------
+- Fix updates not showing on some occasions until Check Again button is clicked
+
+
 3.0.6 (Nov 28, 2020)
 -----------------------------
 - Fix conflict with Rank Math plugin

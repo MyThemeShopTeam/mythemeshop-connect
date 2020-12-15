@@ -36,6 +36,6 @@ class Checker {
 	 * @return bool                Whether checking is necessary.
 	 */
 	public function needs_check_now( $updates_data ) {
-		return apply_filters( 'mts_connect_needs_check', true, $updates_data );
+		return apply_filters( 'mts_connect_needs_check', true, $updates_data, get_class( $this ) );
 	}
 }

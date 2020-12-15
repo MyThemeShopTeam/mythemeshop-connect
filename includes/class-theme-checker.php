@@ -31,8 +31,6 @@ class Theme_Checker extends Checker {
 	}
 
 	public function check_theme_updates( $update_transient ) {
-		remove_filter( 'pre_set_site_transient_update_themes', array( $this, 'check_theme_updates' ) );
-
 		global $wp_version;
 
 		if ( ! isset( $update_transient->checked ) ) {

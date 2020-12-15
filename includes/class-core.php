@@ -73,6 +73,8 @@ class Core {
 		'ui_access_user'  => '',
 	);
 
+	private $just_checked = array();
+
 	/**
 	 * Controller objects.
 	 *
@@ -139,6 +141,8 @@ class Core {
 		add_action( 'switch_theme', array( $this, 'has_premium_mts_products' ), 10, 3 );
 		add_action( 'activated_plugin', array( $this, 'has_premium_mts_products' ), 10, 2 );
 		add_action( 'deactivated_plugin', array( $this, 'has_premium_mts_products' ), 10, 2 );
+
+		add_filter( 'mts_connect_needs_check', array( $this, 'delay_update_checks' ), 10, 3 );
 	}
 
 	/**
@@ -200,6 +204,28 @@ class Core {
 	 */
 	public function load_textdomain() {
 		load_plugin_textdomain( 'mythemeshop-connect', false, dirname( plugin_basename( __FILE__ ) ) . '/language/' );
+	}
+
+	/**
+	 * Delay update checks. 
+	 */
+	public function delay_update_checks( $do_check, $update_data, $class ) {
+		$type = 'plugins';
+		if ( $class !== 'MyThemeShop_Connect\\Plugin_Checker' ) {
+			$type = 'themes';
+		}
+
+		if ( ! empty( $_GET['force-check'] ) && empty( $this->just_checked[ $type ] ) ) {
+			$this->just_checked[ $type ] = 1;
+			return $do_check;
+		}
+
+		$mts_updates = get_site_transient( 'mts_update_' . $type );
+		if ( $mts_updates && ! empty( $mts_updates->last_checked ) && time() < $mts_updates->last_checked + ( 2 * HOUR_IN_SECONDS ) ) {
+			return false;
+		}
+
+		return $do_check;
 	}
 
 	/**
